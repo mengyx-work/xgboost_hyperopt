@@ -31,7 +31,7 @@ class hyperopt_xgboost(object):
 
 
         # create the space for the hyperopt from tunning_params
-        self.params, self.space = {}, {}
+        self.space = {}, {}
         for key, value in tuning_params.iteritems():
             if isinstance(value, tuple):
                 self.space[key] = hp.quniform(key, value[0], value[1], value[2])
@@ -40,7 +40,6 @@ class hyperopt_xgboost(object):
 
         # load the const_params
         if const_params is not None:
-            self.params = const_params.copy()
             self.const_params = const_params.copy()
         else:
             self.const_params = {}
@@ -54,6 +53,8 @@ class hyperopt_xgboost(object):
 
 
     def _objective_func(self, tunning_params):
+
+        # collecte params from the object
         params = {}
         if self.const_params is not None:
             params = self.const_params.copy()
@@ -101,7 +102,7 @@ class hyperopt_xgboost(object):
     def hyperopt_run(self):
         # Trials object where the history of search will be stored #
         trials = Trials()
-        self.columns_name = self.init_tunning_params.keys() + self.const_params.keys()
+        self.columns_name = list(set(self.init_tunning_params.keys()) + set(self.const_params.keys()))
 
         df = pd.DataFrame(columns = self.columns_name + ['best_score', 'best_iters_num', 'auc_score', 'time_cost'])
         df.to_csv(self.data_filename)

@@ -14,8 +14,8 @@ class xgboost_classifier(object):
     to properly use the xgboost_classifer repeatly with loading the data once.
     1. store the data and label columns
     2. keep using the same set for following training, only difference is the params
-
     '''
+    
     def __init__(self, train = None, label_name = None, params = None):
 
         self.params = {}
