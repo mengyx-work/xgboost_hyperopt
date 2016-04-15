@@ -3,6 +3,7 @@ import time, sys, os
 import numpy as np
 import multiprocessing
 from sklearn import cross_validation
+from sklearn import metrics
 from sklearn.utils import shuffle
 #from __future__ import print_function
 
@@ -15,7 +16,7 @@ class xgboost_classifier(object):
     1. store the data and label columns
     2. keep using the same set for following training, only difference is the params
     '''
-    
+
     def __init__(self, train = None, label_name = None, params = None):
 
         self.params = {}
@@ -75,26 +76,27 @@ class xgboost_classifier(object):
             raise ValueError('\n Error: label_name is not defined. \n')
             sys.exit(0)
 
-        if train is not None:
-            self.train = train
-        elif self.train is not None:
-            sys.stderr.write('\n initial training data is used.')
-        else:
-            raise ValueError('\n Error: train data is not defined')
-            sys.exit(0)
-
-        if self.train_labels is None:
-            self.train_labels = self.train[self.label_name]
-        if self.label_name in self.train.columns:
-            self.train  = self.train.drop(self.label_name, axis=1)
 
 
     def fit(self, train = None, label_name = None, params = None, val = None):
-
-        self._check_xgboost_params(train, label_name, params, val)
+        '''
+        train given here is not the self.train, when train is missing self.train will be used
+        '''
+        self._check_xgboost_params(label_name, params, val)
 
         num_round   = self.fit_params['num_round']
         val         = self.fit_params['val']
+
+        if train is None and self.train is None:
+            raise ValueError('\n Error: train data is not defined')
+            sys.exit(0)
+
+        if train is None:
+            train = self.train
+
+        train_labels = train[self.label_name] # define the dep_var
+        if self.label_name in train.columns:
+            train  = train.drop(self.label_name, axis=1) # drop the dep_var in training
 
         # optional attributes
         self.best_score, self.best_iters = None, None
@@ -103,13 +105,13 @@ class xgboost_classifier(object):
         if val:
             sys.stderr.write('\n####################\n train the xgboost with early stopping\n####################\n')
             # define the offset for early stopping #
-            self.EARLY_STOP_OFFSET = int(self.train.shape[0] * self.fit_params['early_stopping_ratio'])
-            dvalid = xgb.DMatrix(np.array(self.train)[:self.EARLY_STOP_OFFSET],
-                                 label = np.array(self.train_labels)[:self.EARLY_STOP_OFFSET],
+            EARLY_STOP_OFFSET = int(train.shape[0] * self.fit_params['early_stopping_ratio'])
+            dvalid = xgb.DMatrix(np.array(train)[:EARLY_STOP_OFFSET],
+                                 label = np.array(train_labels)[:EARLY_STOP_OFFSET],
                                  missing = np.NaN)
 
-            dtrain = xgb.DMatrix(np.array(self.train)[self.EARLY_STOP_OFFSET:],
-                                 label = np.array(self.train_labels)[self.EARLY_STOP_OFFSET:],
+            dtrain = xgb.DMatrix(np.array(train)[EARLY_STOP_OFFSET:],
+                                 label = np.array(train_labels)[EARLY_STOP_OFFSET:],
                                  missing = np.NaN)
 
             self.watchlist = [(dtrain, 'train'), (dvalid, 'val')]
@@ -122,7 +124,7 @@ class xgboost_classifier(object):
 
         else:
             sys.stderr.write('\n####################\n train the xgboost without early stopping\n####################\n')
-            dtrain = xgb.DMatrix(np.array(self.train), label = np.array(self.train_labels), missing = np.NaN)
+            dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN)
 
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
@@ -134,21 +136,63 @@ class xgboost_classifier(object):
 
 
 
+    def cross_validate_fit(self, train = None, label_name = None, params = None, val = None, n_folds = 5):
+        '''
+        cross-validation fit on the entire trainign data by k-fold.
+        return three arrays:
+        scores, best_fit_scores, best_iter_nums
+
+        score metric is fixed to AUC
+        '''
+        self._check_xgboost_params(train, label_name, params, val)
+        kf = cross_validation.KFold(self.train.shape[0], n_folds = n_folds)
+
+        # loop through the CV sets
+        scores, best_fit_scores, best_iter_nums = [], [], []
+        for train_index, test_index in kf:
+            X = self.train[train_index]
+            X_test = self.train[test_index]
+            self.fit(X)
+            if self.best_score is not None and self.best_iters is not None:
+                print 'xgboost fit, best_score: {0}, best_iters: {1} '.format(self.best_score, self.best_iters)
+                best_fit_scores.append(self.best_score)
+                best_iter_nums.append(self.best_iters)
+
+            y_prob = self.predict(X_test)
+            fpr, tpr, thresholds = metrics.roc_curve(X_test[self.label_name], y_prob, pos_label = 1)
+            AUC_score = metrics.auc(fpr, tpr)
+            scores.append(AUC_score)
+
+        # record the averaged score from one iteration
+        avg_score = sum(scores)/len(scores)
+        score_std = 100.*np.std(np.array(scores))/avg_score
+        iter_scores.append(avg_score)
+        iter_std.append(score_std)
+
+        print 'the std for scores: ' + score_std + '\n'
+
+        for i, score, best_score, iter_num in zip(range(len(scores)), scores, best_fit_scores, best_iter_nums):
+            print 'CV: {0}, AUC Score: {1}, Best Fit Score: {2}, Best Iteration Num: {3}'.format(i, score, fit_score, iter_num)
+
+        return scores, best_fit_scores, best_iter_nums
+
+
     def predict(self, test = None):
+
         if test is None:
             raise ValueError('test data is not defined.')
 
         if self.label_name not in test.columns:
-            raise ValueError('\n Error: dep_var is missing in test_data')
+            raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
             sys.exit(0)
 
-        self.test_labels = test[self.label_name]
-        self.test_data = test.drop(self.label_name, axis=1)
-        if self.label_name in self.test_data.columns:
-            raise ValueError('dep_var is still in the test data!')
+        test_labels = test[self.label_name]
+        test_data = test.drop(self.label_name, axis=1)
+        if self.label_name in test_data.columns:
+            raise ValueError('fails to drop ' + self.label_name + ' in the test data!')
             sys.exit(0)
 
-        dtest = xgb.DMatrix(np.array(self.test_data), label = np.array(self.test_labels), missing = np.NaN)
+        dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
 
         if self.best_iters is not None:
             y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
@@ -156,45 +200,3 @@ class xgboost_classifier(object):
             y_prob = self.bst.predict(dtest)
 
         return y_prob
-
-
-    '''
-    def cross_Validate_Fit(self, train = None, label_name = None, params = None, val = None, n_folds = 5):
-
-        iter_best_num = []
-        iter_scores, iter_std = [], []
-
-        kf = cross_validation.KFold(len(labels), n_folds = n_folds)
-
-        # loop through the CV sets
-        scores = []
-        best_fit_scores, best_iter_nums = [], []
-        for train_index, test_index in kf:
-            X, y = train[train_index], labels[train_index]
-            X_test, y_test = train[test_index], labels[test_index]
-            self.fit(X, y, fit_params, val=earlyStop)
-            if self.best_score is not None and self.best_iters is not None:
-                print 'xgboost fit, best_score: {0}, best_iters: {1} '.format(self.best_score, self.best_iters)
-                best_fit_scores.append(self.best_score)
-                best_iter_nums.append(self.best_iters)
-
-            y_prob = self.predict(X_test)
-            score = gini_score.gini_normalized(y_test, y_prob)
-            scores.append(score)
-            # record the averaged best num_round
-        if best_iter_nums:
-            avg_best_num = int(sum(best_iter_nums)/len(best_iter_nums))
-            iter_best_num.append(avg_best_num)
-        else:
-            iter_best_num.append(None)
-        # record the averaged score from one iteration
-        avg_score = sum(scores)/len(scores)
-        score_std = 100.*np.std(np.array(scores))/avg_score
-        iter_scores.append(avg_score)
-        iter_std.append(score_std)
-
-        for i, score, fit_score, iter_num in zip(range(len(scores)), scores, best_fit_scores, best_iter_nums):
-            print 'CV: {0}, Gini Score: {1}, Best Fit Score: {2}, Best Iteration Num: {3}'.format(i, score, fit_score, iter_num)
-
-        return final_avg_score, final_score_std, iter_scores, iter_best_num
-        '''

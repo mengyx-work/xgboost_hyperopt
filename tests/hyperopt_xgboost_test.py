@@ -1,7 +1,7 @@
 import os, sys, time
 
 HOME_DIRECTORY = os.path.expanduser('~')
-PROJECT_UTILS_PATH = HOME_DIRECTORY+'/Google Drive/dev/xgboost_hyperopt_wrapper/xgboost_hyperopt/'
+PROJECT_UTILS_PATH = HOME_DIRECTORY+'/Google Drive/dev/xgboost_hyperopt_wrapper/xgboost_hyperopt/utils'
 sys.path.append(PROJECT_UTILS_PATH)
 
 # suppress various warnings
