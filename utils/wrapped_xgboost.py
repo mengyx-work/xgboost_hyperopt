@@ -9,7 +9,7 @@ from sklearn.utils import shuffle
 
 class xgboost_classifier(object):
 
-    _EARLY_STOPPING_ROUNDS = 100
+    _EARLY_STOPPING_ROUNDS = 200
 
     '''
     to properly use the xgboost_classifer repeatly with loading the data once.
