@@ -13,8 +13,9 @@ class xgboost_classifier(object):
 
     '''
     to properly use the xgboost_classifer repeatly with loading the data once.
-    1. store the data and label columns
-    2. keep using the same set for following training, only difference is the params
+    1. store the data and label_name
+    2. keep using the same set for following training, if the training data is not given
+    3. cross_validate_fit uses fit and predict functions, so it doesn't remove dep_var column
     '''
 
     def __init__(self, train = None, label_name = None, params = None):
@@ -44,15 +45,8 @@ class xgboost_classifier(object):
         if label_name is not None:
             self.label_name = label_name
 
-        if train is not None and label_name is not None:
-            if label_name in train.columns:
-                self.train_labels = self.train[label_name]
-                self.train        = self.train.drop(label_name, axis = 1)
-        else:
-            self.train_labels = None
 
-
-    def _check_xgboost_params(self, train, label_name, params, val):
+    def _check_xgboost_params(self, label_name, params, val):
 
         if params is None:
             self.fit_params = self.params.copy()
@@ -77,6 +71,34 @@ class xgboost_classifier(object):
             sys.exit(0)
 
 
+    def _validate_training_data(self, train, split_train = True):
+        '''
+        helper function to validate train and label_name
+        '''
+        if train is None and self.train is None:
+            raise ValueError('\n Error: train data is not defined')
+            sys.exit(0)
+
+        if train is None:
+            if split_train:
+                train_labels = self.train[self.label_name]
+                train        = self.train.drop(self.label_name, axis=1)
+                return train, train_labels
+            else:
+                return self.train
+
+        if self.label_name not in train.columns:
+            raise ValueError('\n Error: expected the dep_var named ' + self.label_name + ' is not in the training data.')
+            sys.exit(0)
+
+        if split_train:
+            train_labels = train[self.label_name]
+            train  = train.drop(self.label_name, axis=1)
+            return train, train_labels
+        else:
+            return train
+
+
 
     def fit(self, train = None, label_name = None, params = None, val = None):
         '''
@@ -84,19 +106,10 @@ class xgboost_classifier(object):
         '''
         self._check_xgboost_params(label_name, params, val)
 
+        train, train_labels = self._validate_training_data(train, split_train = True)
+
         num_round   = self.fit_params['num_round']
         val         = self.fit_params['val']
-
-        if train is None and self.train is None:
-            raise ValueError('\n Error: train data is not defined')
-            sys.exit(0)
-
-        if train is None:
-            train = self.train
-
-        train_labels = train[self.label_name] # define the dep_var
-        if self.label_name in train.columns:
-            train  = train.drop(self.label_name, axis=1) # drop the dep_var in training
 
         # optional attributes
         self.best_score, self.best_iters = None, None
@@ -134,27 +147,21 @@ class xgboost_classifier(object):
         return self
 
 
-
-
     def cross_validate_fit(self, train = None, label_name = None, params = None, val = None, n_folds = 5):
-        '''
-        cross-validation fit on the entire trainign data by k-fold.
-        return three arrays:
-        scores, best_fit_scores, best_iter_nums
 
-        score metric is fixed to AUC
-        '''
-        self._check_xgboost_params(train, label_name, params, val)
-        kf = cross_validation.KFold(self.train.shape[0], n_folds = n_folds)
+        self._check_xgboost_params(label_name, params, val)
+        train = self._validate_training_data(train, split_train = False)
+        # create k-fold validation index group
+        kf = cross_validation.KFold(train.shape[0], n_folds = n_folds)
 
         # loop through the CV sets
         scores, best_fit_scores, best_iter_nums = [], [], []
         for train_index, test_index in kf:
-            X = self.train[train_index]
-            X_test = self.train[test_index]
+            X = train.iloc[train_index, ]
+            X_test = train.iloc[test_index, ]
             self.fit(X)
             if self.best_score is not None and self.best_iters is not None:
-                print 'xgboost fit, best_score: {0}, best_iters: {1} '.format(self.best_score, self.best_iters)
+                print 'xgboost cross-validate fit, best_score: {0}, best_iters: {1} '.format(self.best_score, self.best_iters)
                 best_fit_scores.append(self.best_score)
                 best_iter_nums.append(self.best_iters)
 
@@ -165,14 +172,12 @@ class xgboost_classifier(object):
 
         # record the averaged score from one iteration
         avg_score = sum(scores)/len(scores)
-        score_std = 100.*np.std(np.array(scores))/avg_score
-        iter_scores.append(avg_score)
-        iter_std.append(score_std)
+        score_std = np.std(np.array(scores))
 
-        print 'the std for scores: ' + score_std + '\n'
-
+        # print out the results
+        print 'AUC scores, std: ' + str(score_std) + ', average score: ' + str(avg_score) + '\n'
         for i, score, best_score, iter_num in zip(range(len(scores)), scores, best_fit_scores, best_iter_nums):
-            print 'CV: {0}, AUC Score: {1}, Best Fit Score: {2}, Best Iteration Num: {3}'.format(i, score, fit_score, iter_num)
+            print 'CV: {0}, AUC Score: {1}, Best Fit Score: {2}, Best Iteration Num: {3}'.format(i, score, best_score, iter_num)
 
         return scores, best_fit_scores, best_iter_nums
 
@@ -188,9 +193,6 @@ class xgboost_classifier(object):
 
         test_labels = test[self.label_name]
         test_data = test.drop(self.label_name, axis=1)
-        if self.label_name in test_data.columns:
-            raise ValueError('fails to drop ' + self.label_name + ' in the test data!')
-            sys.exit(0)
 
         dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
 
