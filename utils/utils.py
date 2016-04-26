@@ -79,7 +79,7 @@ class utils(object):
         return xgb_train
 
     @classmethod
-    def calculat_AUC(labels, pred_res, pos_label = 1):
+    def calculat_AUC(self, labels, pred_res, pos_label = 1):
         fpr, tpr, thresholds = metrics.roc_curve(labels, pred_res, pos_label = pos_label)
         auc = metrics.auc(fpr, tpr)
         return auc
