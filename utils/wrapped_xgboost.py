@@ -34,7 +34,7 @@ class xgboost_classifier(object):
         self.params['eval_metric']              = 'auc'
         self.params["seed"]                     = 100
         self.params['early_stopping_ratio']     = 0.08
-        self.params['nthread']                  = multiprocessing.cpu_count()
+        self.params['nthread']                  = 2 * multiprocessing.cpu_count()
 
         self.model_file_name = model_file
 
