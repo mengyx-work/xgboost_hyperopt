@@ -102,7 +102,7 @@ class xgboost_classifier(object):
 
 
     def get_feature_impoartance(self):
-        if !hasattr(self, 'bst'):
+        if not hasattr(self, 'bst'):
             raise ValueError('no booster is found.')
         return self.bst.get_fscore()
 
