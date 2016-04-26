@@ -18,7 +18,7 @@ class xgboost_classifier(object):
     3. cross_validate_fit uses fit and predict functions, so it doesn't remove dep_var column
     '''
 
-    def __init__(self, train = None, label_name = None, params = None):
+    def __init__(self, train = None, label_name = None, params = None, model_file = './current_xgboost_model'):
 
         self.params = {}
 
@@ -35,6 +35,8 @@ class xgboost_classifier(object):
         self.params["seed"]                     = 100
         self.params['early_stopping_ratio']     = 0.08
         self.params['nthread']                  = multiprocessing.cpu_count()
+
+        self.model_file_name = model_file
 
         if params is not None:
             for key, value in params.iteritems():
@@ -142,7 +144,8 @@ class xgboost_classifier(object):
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
 
-        print 'the xgboost fit is finished, using {} seconds'.format(time.time() - start_time)
+        self.bst.save_model(self.model_file_name)
+        print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
 
         return self
 
