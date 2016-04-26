@@ -108,13 +108,13 @@ class xgboost_classifier(object):
 
 
     def load_model_from_file(self, model_file = None):
-        if !os.path.isfile(self.model_file_name) and model_file == None:
+        if not os.path.isfile(self.model_file_name) and model_file == None:
             raise ValueError('model file is missing.')
 
         if model_file is not None:
             self.model_file_name = model_file
 
-        if !os.path.isfile(self.model_file_name):
+        if not os.path.isfile(self.model_file_name):
             raise ValueError('model file is not found in {}'.format(self.model_file_name))
 
         self.bst = xgb.Booster()
