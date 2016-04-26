@@ -71,7 +71,7 @@ class utils(object):
         return train_data, valid_data
 
     @classmethod
-    def convert_xgboost_data(self, train_data, dep_var_name):
+    def convert_xgboost_data(self, train_data, dep_var_name='dep_var'):
         labels    = train_data[dep_var_name]
         X         = train_data.drop(dep_var_name, axis=1)
         xgb_train = xgb.DMatrix(np.array(X), label = np.array(labels), missing = np.NaN)
