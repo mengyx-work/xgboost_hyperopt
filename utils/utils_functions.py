@@ -59,8 +59,8 @@ class utils(object):
 
         for name, group in grouped_index:
             index_length = int(valid_frac * group.shape[0])
-            valid_index.append(group[0:index_length])
-            train_index.append(group[index_length:])
+            valid_index.extend(group[0:index_length].index.tolist())
+            train_index.extend(group[index_length:].index.tolist())
 
         # shuffle the training and test data in place
         shuffle(train_index)
