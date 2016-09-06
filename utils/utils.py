@@ -3,6 +3,7 @@ import pandas as pd
 import xgboost as xgb
 import sys
 import os.path
+from random import shuffle
 from sklearn import metrics
 from sklearn import datasets
 
@@ -50,7 +51,29 @@ class utils(object):
         return data
 
     @classmethod
+    def create_validation_index(self, df, valid_frac = 0.2, dep_var_name = 'dep_var'):
+        valid_index = []
+        train_index = []
+        index_series = df[dep_var_name]
+        grouped_index = index_series.groupby(index_series)
+
+        for name, group in grouped_index:
+            index_length = int(valid_frac * group.shape[0])
+            valid_index.append(group[0:index_length])
+            train_index.append(group[index_length:])
+
+        # shuffle the training and test data in place
+        shuffle(train_index)
+        shuffle(valid_index)
+
+        return  train_index, valid_index 
+
+        
+    '''
+    @classmethod
     def create_validation_data(self, file_path, valid_frac = 0.2, dep_var_name = 'dep_var'):
+        ## use the dep_var to split the training data and create the validation data
+        ## two different dataFrame valid_data and train_data are created.
 
         train_data = utils._read_data(file_path)
         grouped_training_data = train_data.groupby(dep_var_name)
@@ -69,6 +92,7 @@ class utils(object):
         train_data = train_data.reindex(np.random.permutation(train_data.index))
 
         return train_data, valid_data
+    '''
 
     @classmethod
     def convert_xgboost_data(self, train_data, dep_var_name='dep_var'):
