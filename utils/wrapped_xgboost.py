@@ -1,5 +1,6 @@
 import xgboost as xgb
 import time, sys, os
+import pickle
 import numpy as np
 import multiprocessing
 from sklearn import cross_validation
@@ -164,6 +165,7 @@ class xgboost_classifier(object):
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
 
+        pickle.dump(self.bst, open('{}.p'.format(self.model_file_name), 'wb'))
         self.bst.save_model(self.model_file_name)
         print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
 
