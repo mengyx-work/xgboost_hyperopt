@@ -1,3 +1,37 @@
+import pandas as pd
+import numpy as np
+import time, os, sys
+
+def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
+
+    start_time = time.time()
+    train_date = pd.read_csv(data_path + train_date_file, index_col='Id', skiprows=skipped_train_row_num)
+    train_num = pd.read_csv(data_path + train_num_file, index_col='Id', skiprows=skipped_train_row_num)
+    train_cat = pd.read_csv(data_path + train_cat_file, index_col='Id', skiprows=skipped_train_row_num)
+    test_date = pd.read_csv(data_path + test_date_file, index_col='Id', skiprows=skipped_test_row_num)
+    test_num = pd.read_csv(data_path + test_num_file, index_col='Id', skiprows=skipped_test_row_num)
+    test_cat = pd.read_csv(data_path + test_cat_file, index_col='Id', skiprows=skipped_test_row_num)
+    end_time = time.time()
+    print 'data loading takes ', round((end_time - start_time), 2), 'seconds'
+
+    
+    ## process the date data
+    process_date_data(train_date, test_date, start_time_column_name)
+    print 'finish processing date data ...'
+    
+    ## process categorical data
+    remove_single_value_categorical_columns(train_cat, test_cat)
+    encode_categorical_data(train_cat, test_cat, True)
+    print 'finish processing categorical data ...'
+
+    ## combine the data and save into csv files
+    combined_train = pd.concat([train_cat, train_num, train_date], axis=1)
+    combined_test = pd.concat([test_cat, test_num, test_date], axis=1)
+    
+    combined_train.to_csv(train_data_file)
+    combined_test.to_csv(test_data_file)
+
+
 def process_date_data(train_date, test_date, start_time_column_name):
     print 'raw date data dimension: ', train_date.shape, test_date.shape
     train_date['start_time'] = train_date[start_time_column_name]
