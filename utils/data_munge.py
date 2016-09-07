@@ -24,6 +24,7 @@ def encode_categorical_data(train, test, fill_missing = False):
     '''
     le = LabelEncoder()
 
+    ## this step creates separate train and test dataFrame
     if fill_missing:
         train = train.fillna(value='missing')
         test = test.fillna(value='missing')
@@ -44,6 +45,9 @@ def encode_categorical_data(train, test, fill_missing = False):
 
     end_time = time.time()
     print 'encoding process takes ', round((end_time - start_time)), 'seconds'
+
+    ## train and test are newly created
+    return train, test
 
 
 ## inplace to remove single value columns
