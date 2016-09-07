@@ -35,9 +35,11 @@ class xgboost_classifier(object):
         self.params['eval_metric']              = 'auc'
         self.params["seed"]                     = 100
         self.params['early_stopping_ratio']     = 0.08
+        self.params['nthread']                  = multiprocessing.cpu_count()
         #self.params['nthread']                  = 2 * multiprocessing.cpu_count()
-        self.params['nthread']                  = 8
+        #self.params['nthread']                  = 8
 
+        #self.model_file_name = '{}.pkl'.format(model_file)
         self.model_file_name = model_file
 
         if params is not None:
@@ -51,7 +53,10 @@ class xgboost_classifier(object):
 
 
     def _check_xgboost_params(self, label_name, params, val):
-
+        '''
+        helper function to check the model parameters before
+        training the model
+        '''
         if params is None:
             self.fit_params = self.params.copy()
         else:
@@ -114,6 +119,12 @@ class xgboost_classifier(object):
             raise ValueError('model file is missing.')
 
         if model_file is not None:
+
+            ## check the file format
+            #if model_file[-4:] != '.pkl':
+            #    model_file = '{}.pkl'.format(model_file)
+
+            ## update self.model_file_name
             self.model_file_name = model_file
 
         if not os.path.isfile(self.model_file_name):
@@ -165,7 +176,7 @@ class xgboost_classifier(object):
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
 
-        pickle.dump(self.bst, open('{}.p'.format(self.model_file_name), 'wb'))
+        #pickle.dump(self.bst, open(self.model_file_name, 'wb'))
         self.bst.save_model(self.model_file_name)
         print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
 
