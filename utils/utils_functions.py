@@ -7,7 +7,7 @@ from random import shuffle
 from sklearn import metrics
 from sklearn import datasets
 
-class utils(object):
+class utils_functions(object):
 
     # function to handle the data source, either a pd.data frame or a file path
     @staticmethod
