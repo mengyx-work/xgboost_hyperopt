@@ -1,3 +1,51 @@
+import os, sys, time
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+
+
+def remove_single_value_categorical_columns(train, test):
+    print 'raw categorical data dimension: ', train.shape, test.shape
+    single_value_column_names = []
+    for col in train.columns:
+        if len(train[col].unique()) == 1:
+            single_value_column_names.append(col)
+
+    train.drop(single_value_column_names, axis=1, inplace=True)
+    test.drop(single_value_column_names, axis=1, inplace=True)
+    print 'processed categorical data dimension: ', train.shape, test.shape
+
+
+
+def encode_categorical_data(train, test, fill_missing = False):
+    '''
+    encoding is an extemely slow process
+    So only use the training data to trian the encoder
+    '''
+    le = LabelEncoder()
+
+    if fill_missing:
+        train = train.fillna(value='missing')
+        test = test.fillna(value='missing')
+
+    ## idealy combine the train and test
+    #combined = pd.concat([train, test], axis=0)
+    counter = 0
+    start_time = time.time()
+    for col, dtype in zip(train.columns, train.dtypes):
+        if dtype == 'object':
+            le.fit(pd.concat([train[col], test[col]], axis=0))
+            train[col] = le.transform(train[col])
+            test[col] = le.transform(test[col])
+
+        counter += 1
+        if counter % 20 == 0:
+            print '{} out of {} is processed...'.format(str(counter), str(train.shape[1]))
+
+    end_time = time.time()
+    print 'encoding process takes ', round((end_time - start_time)), 'seconds'
+
+
 ## inplace to remove single value columns
 def remove_single_value_columns(df):
     single_value_column_names = []
@@ -9,6 +57,7 @@ def remove_single_value_columns(df):
     print 'after remvoing single_value column:', df.shape
 
       
+
 def encode_categorical_columns_single_df(df, fill_missing = False):
     le = LabelEncoder()
     if fill_missing:
