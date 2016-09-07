@@ -1,8 +1,22 @@
 import pandas as pd
 import numpy as np
 import time, os, sys
+from . import data_munge
 
 def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file, data_path):
+
+    data_path = '/home/ymm/bosch/'
+
+    train_num_file   = 'train_numeric.csv'
+    train_cat_file   = 'train_categorical.csv'
+    train_date_file  = 'train_date.csv'
+    test_num_file    = 'test_numeric.csv'
+    test_cat_file    = 'test_categorical.csv'
+    test_date_file   = 'test_date.csv'
+
+    start_time_column_name = 'L0_S0_D1'
+    id_column_name = 'Id'
+    dep_var_name = 'Response'
 
     '''
     function to load a subset of Bosch data based on the skipped_row_num lists.
@@ -25,18 +39,49 @@ def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_f
     process_date_data(train_date, test_date, start_time_column_name)
     print 'finish processing date data ...'
     
+    ## process the numerical data
+    data_munge.remove_single_value_columns(train_num, test_num)
+    print 'finish processing numerical data ...'
+
     ## process categorical data
-    remove_single_value_categorical_columns(train_cat, test_cat)
-    encode_categorical_data(train_cat, test_cat, True)
+    data_munge.remove_single_value_columns(train_cat, test_cat)
+    encodeed_train_cat, encoded_test_cat = data_munge.encode_columns(train_cat, test_cat, True)
     print 'finish processing categorical data ...'
 
     ## combine the data and save into csv files
-    combined_train = pd.concat([train_cat, train_num, train_date], axis=1)
-    combined_test = pd.concat([test_cat, test_num, test_date], axis=1)
+    combined_train = pd.concat([encodeed_train_cat, train_num, train_date], axis=1)
+    combined_test = pd.concat([encoded_test_cat, test_num, test_date], axis=1)
     
     combined_train.to_csv(train_data_file)
     combined_test.to_csv(test_data_file)
 
+
+def encode_categorical_data(train, test, fill_missing = False):
+    '''
+    '''
+    le = LabelEncoder()
+    
+    if fill_missing:
+        train = train.fillna(value='missing')
+        test = test.fillna(value='missing')
+    
+    counter = 0
+    start_time = time.time()
+    for col, dtype in zip(train.columns, train.dtypes):
+        if dtype == 'object':
+            le.fit(pd.concat([train[col], test[col]], axis=0))
+            train[col] = le.transform(train[col])
+            test[col] = le.transform(test[col])
+                              
+        counter += 1
+        if counter % 20 == 0:
+            print '{} out of {} is process...'.format(str(counter), str(train.shape[1]))
+                              
+    end_time = time.time()
+    print 'encoding process takes ', round((end_time - start_time)), 'seconds'
+    
+    return train, test
+    
 
 def process_date_data(train_date, test_date, start_time_column_name):
     print 'raw date data dimension: ', train_date.shape, test_date.shape
