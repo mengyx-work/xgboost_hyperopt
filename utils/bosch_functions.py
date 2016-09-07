@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import time, os, sys
 
-def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
+def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file, data_path):
 
     '''
     function to load a subset of Bosch data based on the skipped_row_num lists.
