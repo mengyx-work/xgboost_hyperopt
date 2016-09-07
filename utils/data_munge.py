@@ -4,18 +4,63 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 
 
-def remove_single_value_categorical_columns(train, test):
-    print 'raw categorical data dimension: ', train.shape, test.shape
+def remove_single_value_columns(train, test=None):
+    print 'raw train data dimension: ', train.shape
+    if test is not None:
+        print 'raw test data dimension: ', test.shape
+
     single_value_column_names = []
     for col in train.columns:
         if len(train[col].unique()) == 1:
             single_value_column_names.append(col)
 
     train.drop(single_value_column_names, axis=1, inplace=True)
-    test.drop(single_value_column_names, axis=1, inplace=True)
-    print 'processed categorical data dimension: ', train.shape, test.shape
+    print 'processed train data dimension: ', train.shape
+
+    if test is not None:
+        test.drop(single_value_column_names, axis=1, inplace=True)
+        print 'processed test data dimension: ', test.shape
 
 
+
+def encode_columns(train, test=None, fill_missing = False):
+    '''
+    encoding is an extemely slow process
+    So only use the training data to trian the encoder
+    '''
+    le = LabelEncoder()
+
+    ## this step creates separate train and test dataFrame
+    if fill_missing:
+        train = train.fillna(value='missing')
+        if test is not None:
+            test = test.fillna(value='missing')
+
+    counter = 0
+    start_time = time.time()
+    for col in train.columns:
+        if test is not None:
+            le.fit(pd.concat([train[col], test[col]], axis=0))
+            train[col] = le.transform(train[col])
+            test[col] = le.transform(test[col])
+        else:
+            le.fit(train[col])
+            train[col] = le.transform(train[col])
+
+        counter += 1
+        if counter % 20 == 0:
+            print '{} out of {} is processed...'.format(str(counter), str(train.shape[1]))
+
+    end_time = time.time()
+    print 'encoding process takes ', round((end_time - start_time)), 'seconds'
+
+    ## train and test are newly created
+    if test is not None:
+        return train, test
+    else:
+        return train
+
+ 
 
 def encode_categorical_data(train, test, fill_missing = False):
     '''
@@ -49,19 +94,7 @@ def encode_categorical_data(train, test, fill_missing = False):
     ## train and test are newly created
     return train, test
 
-
-## inplace to remove single value columns
-def remove_single_value_columns(df):
-    single_value_column_names = []
-    for col in df.columns:
-        if len(df[col].unique()) == 1:
-            single_value_column_names.append(col)
-    print 'before remvoing single_value column:', df.shape
-    df.drop(single_value_column_names, axis=1, inplace=True)
-    print 'after remvoing single_value column:', df.shape
-
       
-
 def encode_categorical_columns_single_df(df, fill_missing = False):
     le = LabelEncoder()
     if fill_missing:
@@ -70,13 +103,15 @@ def encode_categorical_columns_single_df(df, fill_missing = False):
     for col, dtype in zip(df.columns, df.dtypes):
         if dtype == 'object':
             df[col] = le.fit_transform(df[col])
-            
+
+    return df
 
 
 def replace_missing_with_fix_value(df, missing_value):
     for col, dtype in zip(df.columns, df.dtypes):
         if dtype == 'float64':
             df[col] = df[col].fillna(value = missing_value)
+
           
                 
 def replace_missing_with_random_sample(df):
