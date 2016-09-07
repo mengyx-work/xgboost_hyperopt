@@ -4,6 +4,12 @@ import time, os, sys
 
 def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
 
+    '''
+    function to load a subset of Bosch data based on the skipped_row_num lists.
+    three separate csv files are loaded: numerical, categorical and date for 
+    train and test data
+    '''
+
     start_time = time.time()
     train_date = pd.read_csv(data_path + train_date_file, index_col='Id', skiprows=skipped_train_row_num)
     train_num = pd.read_csv(data_path + train_num_file, index_col='Id', skiprows=skipped_train_row_num)
