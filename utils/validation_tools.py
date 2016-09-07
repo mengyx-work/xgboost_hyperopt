@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os, sys, time
 
-def create_validation_index(self, df, valid_frac = 0.2, dep_var_name = 'dep_var'):
+def create_validation_index(df, valid_frac = 0.2, dep_var_name = 'dep_var'):
   valid_index = []
   train_index = []
   index_series = df[dep_var_name]
