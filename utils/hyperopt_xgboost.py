@@ -4,7 +4,8 @@ import numpy as np
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn import metrics
 from wrapped_xgboost import xgboost_classifier
-from . import utils_functions, validation_tools
+from utils import validation_tools
+from utils.utils_functions import utils_functions
 
 class hyperopt_xgboost(object):
 
