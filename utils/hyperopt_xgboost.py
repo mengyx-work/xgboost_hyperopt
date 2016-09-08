@@ -11,7 +11,7 @@ class hyperopt_xgboost(object):
     _MAX_OPT_COUNT = 100
     _FILENAME = 'hyperopt_xgboost_output.csv'
 
-    def __init__(self, full_data = None, label_name = None, tuning_params = None, const_params = None, data_filename = _FILENAME, max_opt_count = _MAX_OPT_COUNT):
+    def __init__(self, full_data = None, label_name = None, tuning_params = None, const_params = None, data_filename = _FILENAME, max_opt_count = _MAX_OPT_COUNT, crosValid_mode=False, fold_num=3):
 
         if tuning_params is None:
             raise ValueError('tunning parameters are not given')
@@ -26,11 +26,12 @@ class hyperopt_xgboost(object):
         self.init_tunning_params = tuning_params
         self.start_time          = time.time()
         self.iter_count          = 0
+        self.label_name          = self.label_name
+        ## params for crosValid mode
+        self.crosValid_mode      = crosValid_mode
+        self.fold_num            = fold_num
 
-        self.train_data, self.valid_data = utils.create_validation_data(full_data, valid_frac = 0.2, dep_var_name = label_name)
-
-
-        # create the space for the hyperopt from tunning_params
+        ## create the space for the hyperopt from tunning_params
         self.space = {}
         for key, value in tuning_params.iteritems():
             if isinstance(value, tuple):
@@ -38,7 +39,7 @@ class hyperopt_xgboost(object):
             if isinstance(value, list):
                 self.space[key] = hp.choice(value)
 
-        # load the const_params
+        ## load the const_params
         if const_params is not None:
             self.const_params = const_params.copy()
         else:
@@ -48,8 +49,14 @@ class hyperopt_xgboost(object):
         if 'val' not in self.const_params:
             self.const_params['val'] = True
 
-        # xgboost model
-        self.xgb_classifier = xgboost_classifier(train=self.train_data, label_name=label_name)
+        ## wrapper_xgboost provides additional function to do cross validation on a training data
+        ## the crosValid_mode support this method
+        ## Otherwise, it uses the standard way to build and train xgboost from wrapped_xgboost
+        if not self.crosValid_mode:
+            self.train_data, self.valid_data = utils.create_validation_data(full_data, valid_frac=0.2, dep_var_name=self.label_name)
+            # xgboost model
+            self.xgb_classifier = xgboost_classifier(train=self.train_data, label_name=self.label_name)
+
 
 
     def _objective_func(self, tunning_params):
@@ -71,6 +78,9 @@ class hyperopt_xgboost(object):
             val = params['val']
         else:
             val = True
+
+        if self.crosValid_mode:
+            xgb_clf = xgboost_classifier(label_name = dep_var_name, params = params)
 
         start_time = time.time()
         self.xgb_classifier.fit(params = params, val = val)
