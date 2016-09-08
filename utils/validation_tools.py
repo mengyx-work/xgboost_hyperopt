@@ -18,7 +18,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
     df = pd.DataFrame(columns=param_dict.keys() + ['avg_score', 'score_std'])
     df.to_csv(result_file)
     row_counter = 0
-    start_time = time()
+    start_time = time.time()
     ## loop through the grid points  
     for param in params_list:
         model_params = {}
@@ -39,7 +39,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         row_counter += 1
 
         if row_counter % 10 == 0:
-            print '{} grid points are finished using {} seconds'.format(row_counter, round((time() - start_time), 0))
+            print '{} grid points are finished using {} seconds'.format(row_counter, round((time.time() - start_time), 0))
         
 
 
@@ -48,6 +48,7 @@ def list_const_params(params):
     for key, value in params.items():
         listed_params[key] = [value]
     return listed_params
+
 
 
 def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold_num=2):
