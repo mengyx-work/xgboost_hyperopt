@@ -28,7 +28,7 @@ class hyperopt_xgboost(object):
         self.init_tunning_params = tuning_params
         self.start_time          = time.time()
         self.iter_count          = 0
-        self.label_name          = self.label_name
+        self.label_name          = label_name
         ## params for crosValid mode
         self.crosValid_mode      = crosValid_mode
         self.fold_num            = fold_num
@@ -85,11 +85,11 @@ class hyperopt_xgboost(object):
 
         start_time = time.time()
         # all the optimizing parameters used in this run
-        data_row = [params[key_name] for key_name in self.columns_name]
+        data_row = [params[key_name] if key_name in params.keys() else 'NaN' for key_name in self.columns_name]
 
         if self.crosValid_mode:
             self.xgb_classifier = xgboost_classifier(label_name=self.label_name, params=params)
-            results = self.xgb_classifier.cross_validate_fit(validation_tool.score_MCC, self.full_data, n_folds=self.fold_num)
+            results = self.xgb_classifier.cross_validate_fit(validation_tools.score_MCC, self.full_data, n_folds=self.fold_num)
             avg_score =  np.average(results)
             score_std = np.std(results)
             data_row.append(avg_score)
@@ -119,13 +119,16 @@ class hyperopt_xgboost(object):
         df.to_csv(self.data_filename)
 
         #return - AUC_score
+        return -avg_score
 
 
     def hyperopt_run(self):
         # Trials object where the history of search will be stored #
         trials = Trials()
         self.columns_name = list(set(self.init_tunning_params.keys()) | set(self.const_params.keys()))
-        if self.crosValid_mode:
+        print 'param columns:', self.columns_name
+        print len(self.columns_name)
+        if not self.crosValid_mode:
             df = pd.DataFrame(columns = self.columns_name + ['best_score', 'best_iters_num', 'auc_score', 'time_cost'])
         else:
             df = pd.DataFrame(columns = self.columns_name + ['avg_score', 'score_std', 'time_cost'])
