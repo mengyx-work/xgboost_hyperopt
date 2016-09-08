@@ -56,6 +56,54 @@ def create_grouped_index_df(bin_num):
 
 
 
+def subset_complete_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
+
+    '''
+    function to load a subset of Bosch data based on the skipped_row_num lists.
+    three separate csv files are loaded: numerical, categorical and date for 
+    train and test data
+    '''
+
+    train_date = pd.read_csv(data_path + train_date_file, index_col='Id', skiprows=skipped_train_row_num)
+    train_num = pd.read_csv(data_path + train_num_file, index_col='Id', skiprows=skipped_train_row_num)
+    train_cat = pd.read_csv(data_path + train_cat_file, index_col='Id', skiprows=skipped_train_row_num)
+    test_date = pd.read_csv(data_path + test_date_file, index_col='Id', skiprows=skipped_test_row_num)
+    test_num = pd.read_csv(data_path + test_num_file, index_col='Id', skiprows=skipped_test_row_num)
+    test_cat = pd.read_csv(data_path + test_cat_file, index_col='Id', skiprows=skipped_test_row_num)
+    
+    ## process the date data
+    process_date_data(train_date, test_date, start_time_column_name)
+
+    if not all(train_date.dtypes == 'float64'):
+        print 'date train data has non-numerical columns!'
+        sys.exit(0)
+        
+    if not all(test_date.dtypes == 'float64'):
+        print 'date test data has non-numerical columns!'
+        sys.exit(0)
+
+    train_date, test_date = data_munge.replace_missing_with_fix_value(train_date, test_date, -1.) 
+    print 'finish processing date data ...'
+    
+    ## process the numerical data
+    data_munge.remove_single_value_columns(train_num, test_num)
+    replace_missing_numerical_value(train_num, test_num)
+    print 'finish processing numerical data ...'
+
+    ## process categorical data
+    data_munge.remove_single_value_columns(train_cat, test_cat)
+    encodeed_train_cat, encoded_test_cat = data_munge.encode_columns(train_cat, test_cat, True)
+    print 'finish processing categorical data ...'
+
+    ## combine the data and save into csv files
+    combined_train = pd.concat([encodeed_train_cat, train_num, train_date], axis=1)
+    combined_test = pd.concat([encoded_test_cat, test_num, test_date], axis=1)
+    
+    combined_train.to_csv(train_data_file)
+    combined_test.to_csv(test_data_file)
+
+
+
 
 def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
 
@@ -97,9 +145,39 @@ def load_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_f
     combined_test.to_csv(test_data_file)
 
 
+def replace_missing_numerical_value(train, test):
+    for col, dtype in zip(train.columns, train.dtypes):
+        if dtype == 'float64' or dtype == 'int64':
+            ## to avoid the dep_var/label column
+            if col != dep_var_name:
+                combined_series = pd.concat([train[col], test[col]], axis=0)
+            else:
+                continue
+
+            ## select the fill_value for NaN
+            if sum(combined_series.isnull()) == 0:
+                continue
+            if combined_series.max() < 1.:
+                fill_value = 1.
+            elif combined_series.min() > -1.:
+                fill_value = -1.
+            elif 0. not in combined_series.values:
+                fill_value = 0.
+            else:
+                print 'failed to find proper value to fill missing value in column: ', col
+                sys.exit(0)
+
+            train[col] = train[col].fillna(value = fill_value)
+            test[col] = test[col].fillna(value = fill_value)
+
+        else:
+            print 'none numerical column is found: ', col
+            sys.exit(0)
+
+
+'''
 def encode_categorical_data(train, test, fill_missing = False):
-    '''
-    '''
+
     le = LabelEncoder()
     
     if fill_missing:
@@ -122,6 +200,7 @@ def encode_categorical_data(train, test, fill_missing = False):
     print 'encoding process takes ', round((end_time - start_time)), 'seconds'
     
     return train, test
+'''
     
 
 def process_date_data(train_date, test_date, start_time_column_name):
