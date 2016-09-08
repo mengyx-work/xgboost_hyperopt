@@ -42,7 +42,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             print '{} grid points are finished using {} seconds'.format(row_counter, round((time.time() - start_time), 0))
         
 
-
+## helper function to put dictionary single value into a list
 def list_const_params(params):
     listed_params = {}
     for key, value in params.items():
@@ -52,6 +52,16 @@ def list_const_params(params):
 
 
 def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold_num=2):
+    '''
+    function to 
+    1. create tratified KFold
+    2. cross validate the given classifier for each fold
+    3. use the given eval_func
+    4. the classifier requires fit and predict two functions
+
+    noted that the StratifiedKFold function gives the location index, 
+    not the DataFrame index
+    '''
     
     results = []
     train_label = train_df[train_label_name]
@@ -71,10 +81,13 @@ def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold
     return results
 
 
-## assuming the model output is the probability of being default,
-## then this probability can be used for ranking. Then using the fraction of
-## default in validation data to assign the proper threshold to the prediction
 def score_MCC(ground_truth, scores):
+    '''
+    assuming the model output is the probability of being default,
+    then this probability can be used for ranking. Then using the fraction of
+    default in validation data to assign the proper threshold to the prediction
+    '''
+
     if isinstance(scores, pd.Series):
         scores = scores.values
 
@@ -92,26 +105,29 @@ def score_MCC(ground_truth, scores):
     ## convert to sk-learn format
     np.place(binary_scores, binary_scores==0, -1)
     np.place(tmp_ground_truth, tmp_ground_truth==0, -1)
-    #print ground_truth
-    #print binary_scores
+
     return matthews_corrcoef(tmp_ground_truth, binary_scores)
 
 
-def create_validation_index(df, valid_frac = 0.2, dep_var_name = 'dep_var'):
-  valid_index = []
-  train_index = []
-  index_series = df[dep_var_name]
-  grouped_index = index_series.groupby(index_series)
 
-  for name, group in grouped_index:
-    index_length = int(valid_frac * group.shape[0])
-    valid_index.extend(group[0:index_length].index.tolist())
-    train_index.extend(group[index_length:].index.tolist())
+def create_validation_index(df, valid_frac = 0.2, dep_var_name = 'dep_var', to_shuffle=False):
+    '''
+    function to create train/validation DataFrame index
+    from a given DataFrame.
+    '''
+    valid_index = []
+    train_index = []
+    index_series = df[dep_var_name]
+    grouped_index = index_series.groupby(index_series)
 
-  # shuffle the training and test data in place
-  shuffle(train_index)
-  shuffle(valid_index)
+    for name, group in grouped_index:
+        index_length = int(valid_frac * group.shape[0])
+        valid_index.extend(group[0:index_length].index.tolist())
+        train_index.extend(group[index_length:].index.tolist())
 
-  return  train_index, valid_index 
+    ## shuffle the training and test data in place
+    if to_shuffle:
+        shuffle(train_index)
+        shuffle(valid_index)
 
-
+    return  train_index, valid_index 
