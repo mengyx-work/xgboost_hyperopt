@@ -6,18 +6,21 @@ from sklearn.metrics import matthews_corrcoef
 from sklearn.cross_validation import StratifiedKFold
 
 
-def cross_validate_model(train_df, train_label, classifier, eval_func, fold_num=2):
+def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold_num=2):
     
     results = []
+    train_label = train_df[train_label_name]
+    train_df.drop(train_label_name, axis=1, inplace=True)
     skf = StratifiedKFold(train_label, fold_num, shuffle=True)
 
     for train, test in skf:
         kfold_train = train_df.iloc[train, :]
-        kfold_train_label = train_label[train]
+        kfold_train_label = train_label.iloc[train]
         kfold_test = train_df.iloc[test, :]
-        kfold_test_label = train_label[test]
+        kfold_test_label = train_label.iloc[test]
         classifier.fit(kfold_train, kfold_train_label)
         scores = classifier.predict(kfold_test)
+        print np.mean(kfold_test_label), np.mean(scores)
         result = eval_func(kfold_test_label, scores)
         results.append(result)
         
