@@ -4,6 +4,50 @@ import os, sys, time
 from random import shuffle
 from sklearn.metrics import matthews_corrcoef
 from sklearn.cross_validation import StratifiedKFold
+import itertools
+
+
+def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv'):
+    '''
+    function to conduct grid search on models using metrics give by eval_func
+    Since at each grid point, a different model is initialized; a model_class
+    is provided to repeatedly initiate new model 
+    '''
+    ## flatten the parameter grid
+    params_list = list(itertools.product(*param_dict.values()))
+    df = pd.DataFrame(columns=param_dict.keys() + ['avg_score', 'score_std'])
+    df.to_csv(result_file)
+    row_counter = 0
+    start_time = time()
+    ## loop through the grid points  
+    for param in params_list:
+        model_params = {}
+        for value, key in zip(param, param_dict.keys()):
+            model_params[key] = value
+            
+        ## initiate new model from model_class
+        model = model_class(model_params)
+        tmp_train = train.copy()
+        results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+        row_content = model_params.values()
+        row_content.append(np.mean(results))
+        row_content.append(np.std(results))
+        ## save content into csv file
+        df = pd.read_csv(result_file, index_col=0)
+        df.loc[row_counter] = row_content
+        df.to_csv(result_file)
+        row_counter += 1
+
+        if row_counter % 10 == 0:
+            print '{} grid points are finished using {} seconds'.format(row_counter, round((time() - start_time), 0))
+        
+
+
+def list_const_params(params):
+    listed_params = {}
+    for key, value in params.items():
+        listed_params[key] = [value]
+    return listed_params
 
 
 def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold_num=2):
