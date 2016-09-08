@@ -107,11 +107,20 @@ def encode_categorical_columns_single_df(df, fill_missing = False):
     return df
 
 
-def replace_missing_with_fix_value(df, missing_value):
-    for col, dtype in zip(df.columns, df.dtypes):
-        if dtype == 'float64':
-            df[col] = df[col].fillna(value = missing_value)
+def replace_missing_with_fix_value(train, test=None, missing_value=0.):
+    train_df = pd.DataFrame()
+    test_df = pd.DataFrame()
 
+    for col, dtype in zip(train.columns, train.dtypes):
+        if dtype == 'float64' or dtype == 'int64':
+            train_df[col] = train[col].fillna(value = missing_value)
+            if test is not None:
+                test_df[col] = test[col].fillna(value = missing_value)
+
+    if test is not None:
+        return train_df, test_df
+    else:
+        return train_df
           
                 
 def replace_missing_with_random_sample(df):
