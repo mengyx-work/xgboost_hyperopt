@@ -6,6 +6,7 @@ import multiprocessing
 from sklearn import cross_validation
 from sklearn import metrics
 from sklearn.utils import shuffle
+from sklearn.cross_validation import StratifiedKFold
 #from __future__ import print_function
 
 class xgboost_classifier(object):
@@ -182,7 +183,52 @@ class xgboost_classifier(object):
 
         return self
 
+    def cross_validate_fit(self, eval_func, train = None, label_name = None, params = None, val = None, n_folds = 5):
+        
+        self._check_xgboost_params(label_name, params, val)
+        train = self._validate_training_data(train, split_train = False)
+        results = []
+        print 'label name:', self.label_name
+        skf = StratifiedKFold(train[self.label_name], n_folds, shuffle=True)
+        print 'train shape:', train.shape
 
+        for train_index, test_index in skf:
+            kfold_train = train.iloc[train_index, :]
+            kfold_test  = train.iloc[test_index, :]
+            kfold_test_label = kfold_test[self.label_name]
+            self.fit(kfold_train)
+            scores = self.predict(kfold_test)
+            result = eval_func(kfold_test_label, scores)
+            results.append(result)
+        
+        return results
+
+
+
+    def predict(self, test = None):
+
+        if test is None:
+            raise ValueError('test data is not defined.')
+
+        if self.label_name not in test.columns:
+            raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
+            sys.exit(0)
+
+        test_labels = test[self.label_name]
+        test_data = test.drop(self.label_name, axis=1)
+
+        dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
+
+        if self.best_iters is not None:
+            y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
+        else:
+            y_prob = self.bst.predict(dtest)
+
+        return y_prob
+
+
+
+'''
     def cross_validate_fit(self, train = None, label_name = None, params = None, val = None, n_folds = 5):
 
         self._check_xgboost_params(label_name, params, val)
@@ -216,25 +262,5 @@ class xgboost_classifier(object):
             print 'CV: {0}, AUC Score: {1}, Best Fit Score: {2}, Best Iteration Num: {3}'.format(i, score, best_score, iter_num)
 
         return scores, best_fit_scores, best_iter_nums
+'''
 
-
-    def predict(self, test = None):
-
-        if test is None:
-            raise ValueError('test data is not defined.')
-
-        if self.label_name not in test.columns:
-            raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
-            sys.exit(0)
-
-        test_labels = test[self.label_name]
-        test_data = test.drop(self.label_name, axis=1)
-
-        dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
-
-        if self.best_iters is not None:
-            y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
-        else:
-            y_prob = self.bst.predict(dtest)
-
-        return y_prob
