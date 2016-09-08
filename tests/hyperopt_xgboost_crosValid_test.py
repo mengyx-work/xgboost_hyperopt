@@ -10,7 +10,7 @@ sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
 import warnings
 warnings.simplefilter(action = "ignore", category = FutureWarning)
 
-from hyperopt_xgboost import hyperopt_xgboost
+from utils.hyperopt_xgboost import hyperopt_xgboost
 from utils.utils_functions import utils_functions
 
 # the parameters to tune by hyperopt
@@ -39,7 +39,7 @@ dep_var_name = 'any_dep_var_name'
 data = utils_functions.get_mockup_data(dep_var_name)
 
 hyperopt = hyperopt_xgboost(data, dep_var_name,
-                            tuning_params = tuing_params,
+                            tuning_params = tuning_params,
                             const_params  = params,
                             data_filename = 'tmp_results.csv',
                             crosValid_mode = True,
