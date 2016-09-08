@@ -20,7 +20,6 @@ def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold
         kfold_test_label = train_label.iloc[test]
         classifier.fit(kfold_train, kfold_train_label)
         scores = classifier.predict(kfold_test)
-        print np.mean(kfold_test_label), np.mean(scores)
         result = eval_func(kfold_test_label, scores)
         results.append(result)
         
