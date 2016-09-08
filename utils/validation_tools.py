@@ -28,6 +28,9 @@ def cross_validate_model(train_df, train_label, classifier, eval_func, fold_num=
 ## then this probability can be used for ranking. Then using the fraction of
 ## default in validation data to assign the proper threshold to the prediction
 def score_MCC(ground_truth, scores):
+    if isinstance(scores, pd.Series):
+        scores = scores.values
+
     if isinstance(ground_truth, pd.Series):
         ground_truth = ground_truth.values
 
