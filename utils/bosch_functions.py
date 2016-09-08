@@ -59,17 +59,23 @@ def create_grouped_index_df(bin_num):
 def subset_complete_data_by_index(skipped_train_row_num, skipped_test_row_num, train_data_file, test_data_file):
 
     '''
-    function to load a subset of Bosch data based on the skipped_row_num lists.
-    three separate csv files are loaded: numerical, categorical and date for 
-    train and test data
+    function that load the numerical, date and categorical types
+    data for train and test by skipped_row_num.
+    
+    process them in different ways:
+    1. numerical: remove single-valued column and fill up NaN
+    2. categorical: remove single-valued column, fill NaN with 'missing' and encode them
+    3. date: normalize the date/time to the start_time and remove single-valued columns
+
+    save data into csv files
     '''
 
     train_date = pd.read_csv(data_path + train_date_file, index_col='Id', skiprows=skipped_train_row_num)
-    train_num = pd.read_csv(data_path + train_num_file, index_col='Id', skiprows=skipped_train_row_num)
-    train_cat = pd.read_csv(data_path + train_cat_file, index_col='Id', skiprows=skipped_train_row_num)
-    test_date = pd.read_csv(data_path + test_date_file, index_col='Id', skiprows=skipped_test_row_num)
-    test_num = pd.read_csv(data_path + test_num_file, index_col='Id', skiprows=skipped_test_row_num)
-    test_cat = pd.read_csv(data_path + test_cat_file, index_col='Id', skiprows=skipped_test_row_num)
+    train_num  = pd.read_csv(data_path + train_num_file,  index_col='Id', skiprows=skipped_train_row_num)
+    train_cat  = pd.read_csv(data_path + train_cat_file,  index_col='Id', skiprows=skipped_train_row_num)
+    test_date  = pd.read_csv(data_path + test_date_file,  index_col='Id', skiprows=skipped_test_row_num)
+    test_num   = pd.read_csv(data_path + test_num_file,   index_col='Id', skiprows=skipped_test_row_num)
+    test_cat   = pd.read_csv(data_path + test_cat_file,   index_col='Id', skiprows=skipped_test_row_num)
     
     ## process the date data
     process_date_data(train_date, test_date, start_time_column_name)
