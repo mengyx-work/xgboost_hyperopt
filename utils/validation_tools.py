@@ -3,6 +3,25 @@ import numpy as np
 import os, sys, time
 from random import shuffle
 from sklearn.metrics import matthews_corrcoef
+from sklearn.cross_validation import StratifiedKFold
+
+
+def cross_validate_model(train_df, train_label, classifier, eval_func, fold_num=2):
+    
+    results = []
+    skf = StratifiedKFold(train_label, fold_num, shuffle=True)
+
+    for train, test in skf:
+        kfold_train = train_df.iloc[train, :]
+        kfold_train_label = train_label[train]
+        kfold_test = train_df.iloc[test, :]
+        kfold_test_label = train_label[test]
+        classifier.fit(kfold_train, kfold_train_label)
+        scores = classifier.predict(kfold_test)
+        result = eval_func(kfold_test_label, scores)
+        results.append(result)
+        
+    return results
 
 
 ## assuming the model output is the probability of being default,
@@ -23,6 +42,7 @@ def score_MCC(ground_truth, scores):
     #print ground_truth
     #print binary_scores
     return matthews_corrcoef(tmp_ground_truth, binary_scores)
+
 
 def create_validation_index(df, valid_frac = 0.2, dep_var_name = 'dep_var'):
   valid_index = []
