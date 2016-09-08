@@ -1,9 +1,10 @@
-import sys, time
+import sys, time, os
 import pandas as pd
+import numpy as np
 from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
 from sklearn import metrics
 from wrapped_xgboost import xgboost_classifier
-from utils import utils
+from . import utils_functions, validation_tools
 
 class hyperopt_xgboost(object):
 
@@ -53,9 +54,11 @@ class hyperopt_xgboost(object):
         ## the crosValid_mode support this method
         ## Otherwise, it uses the standard way to build and train xgboost from wrapped_xgboost
         if not self.crosValid_mode:
-            self.train_data, self.valid_data = utils.create_validation_data(full_data, valid_frac=0.2, dep_var_name=self.label_name)
+            self.train_data, self.valid_data = utils_functions.create_validation_data(full_data, valid_frac=0.2, dep_var_name=self.label_name)
             # xgboost model
             self.xgb_classifier = xgboost_classifier(train=self.train_data, label_name=self.label_name)
+        else:
+            self.full_data = full_data
 
 
 
@@ -79,25 +82,33 @@ class hyperopt_xgboost(object):
         else:
             val = True
 
-        if self.crosValid_mode:
-            xgb_clf = xgboost_classifier(label_name = dep_var_name, params = params)
-
         start_time = time.time()
-        self.xgb_classifier.fit(params = params, val = val)
-        pred_res = self.xgb_classifier.predict(self.valid_data)
-
-        best_score = self.xgb_classifier.best_score
-        best_iters = self.xgb_classifier.best_iters
-
-        fpr, tpr, thresholds = metrics.roc_curve(self.xgb_classifier.test_labels, pred_res, pos_label = 1)
-        AUC_score = metrics.auc(fpr, tpr)
-        time_cost = time.time() - start_time
-
         # all the optimizing parameters used in this run
         data_row = [params[key_name] for key_name in self.columns_name]
-        data_row.append(best_score)
-        data_row.append(best_iters)
-        data_row.append(AUC_score)
+
+        if self.crosValid_mode:
+            self.xgb_classifier = xgboost_classifier(label_name=self.label_name, params=params)
+            results = self.xgb_classifier.cross_validate_fit(validation_tool.score_MCC, self.full_data, n_folds=self.fold_num)
+            avg_score =  np.average(results)
+            score_std = np.std(results)
+            data_row.append(avg_score)
+            data_row.append(score_std)
+        else:
+            self.xgb_classifier.fit(params = params, val = val)
+            pred_res = self.xgb_classifier.predict(self.valid_data)
+            ## assuming the xgb_classifier will provide both score and iter_num
+            best_score = self.xgb_classifier.best_score
+            best_iters = self.xgb_classifier.best_iters
+            ## use AUC as the metric
+            fpr, tpr, thresholds = metrics.roc_curve(self.xgb_classifier.test_labels, pred_res, pos_label = 1)
+            AUC_score = metrics.auc(fpr, tpr)
+            ## write results into csv file 
+            data_row.append(best_score)
+            data_row.append(best_iters)
+            data_row.append(AUC_score)
+
+        ## write the time cost to file
+        time_cost = time.time() - start_time
         data_row.append(time_cost)
 
         # write to the data file
@@ -106,15 +117,18 @@ class hyperopt_xgboost(object):
         self.iter_count += 1
         df.to_csv(self.data_filename)
 
-        return - AUC_score
+        #return - AUC_score
 
 
     def hyperopt_run(self):
         # Trials object where the history of search will be stored #
         trials = Trials()
         self.columns_name = list(set(self.init_tunning_params.keys()) | set(self.const_params.keys()))
+        if self.crosValid_mode:
+            df = pd.DataFrame(columns = self.columns_name + ['best_score', 'best_iters_num', 'auc_score', 'time_cost'])
+        else:
+            df = pd.DataFrame(columns = self.columns_name + ['avg_score', 'score_std', 'time_cost'])
 
-        df = pd.DataFrame(columns = self.columns_name + ['best_score', 'best_iters_num', 'auc_score', 'time_cost'])
         df.to_csv(self.data_filename)
         # start the hyperparameter optimizing
         self.best = fmin(self._objective_func, self.space, algo = tpe.suggest, trials = trials, max_evals = self.max_opt_count)
