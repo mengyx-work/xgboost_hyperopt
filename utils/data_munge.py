@@ -23,6 +23,19 @@ def remove_single_value_columns(train, test=None):
 
 
 
+def check_dataFrame_numerical_columns(train, test):
+    
+    if not train.isnull().sum() == 0 or not test.isnull().sum():
+        return False
+
+    for col, dtype in zip(train.columns, train.dtypes):
+        if dtype != 'float64' or dtype != 'int64':
+            print 'column ', col, ' is not numerical....'
+            return False
+
+    return True
+
+
 def encode_columns(train, test=None, fill_missing = False):
     '''
     encoding is an extemely slow process
