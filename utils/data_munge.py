@@ -5,6 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 
 
 def remove_single_value_columns(train, test=None):
+
     print 'raw train data dimension: ', train.shape
     if test is not None:
         print 'raw test data dimension: ', test.shape
@@ -34,6 +35,7 @@ def check_dataFrame_numerical_columns(train, test):
             return False
 
     return True
+
 
 
 def encode_columns(train, test=None, fill_missing = False):
@@ -87,8 +89,6 @@ def encode_categorical_data(train, test, fill_missing = False):
         train = train.fillna(value='missing')
         test = test.fillna(value='missing')
 
-    ## idealy combine the train and test
-    #combined = pd.concat([train, test], axis=0)
     counter = 0
     start_time = time.time()
     for col, dtype in zip(train.columns, train.dtypes):
@@ -99,7 +99,7 @@ def encode_categorical_data(train, test, fill_missing = False):
 
         counter += 1
         if counter % 20 == 0:
-            print '{} out of {} is processed...'.format(str(counter), str(train.shape[1]))
+            print '{} out of {} is processed using {} seconds...'.format(str(counter), str(train.shape[1]), round((time.time() - start_time), 0))
 
     end_time = time.time()
     print 'encoding process takes ', round((end_time - start_time)), 'seconds'
