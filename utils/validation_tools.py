@@ -7,7 +7,7 @@ from sklearn.cross_validation import StratifiedKFold
 import itertools
 
 
-def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv'):
+def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv', is_xgb_model=False):
     '''
     function to conduct grid search on models using metrics give by eval_func
     Since at each grid point, a different model is initialized; a model_class
@@ -18,6 +18,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
     df = pd.DataFrame(columns=param_dict.keys() + ['avg_score', 'score_std'])
     df.to_csv(result_file)
     row_counter = 0
+
     start_time = time.time()
     ## loop through the grid points  
     for param in params_list:
@@ -26,9 +27,15 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             model_params[key] = value
             
         ## initiate new model from model_class
-        model = model_class(model_params)
         tmp_train = train.copy()
-        results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+
+        if not is_xgb_model:
+            model = model_class(model_params)
+            results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+        else:
+            model = model_class(label_name = dep_var_name, params = params)
+            results = model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
+
         row_content = model_params.values()
         row_content.append(np.mean(results))
         row_content.append(np.std(results))
