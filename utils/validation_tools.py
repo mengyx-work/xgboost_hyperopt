@@ -28,13 +28,12 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             
         ## initiate new model from model_class
         tmp_train = train.copy()
-
         if not is_xgb_model:
             model = model_class(model_params)
             results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
         else:
-            model = model_class(label_name = dep_var_name, params = params)
-            results = model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
+            xgb_model = model_class(label_name = dep_var_name, params = model_params)
+            results = xgb_model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
 
         row_content = model_params.values()
         row_content.append(np.mean(results))
@@ -48,6 +47,13 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         if row_counter % 10 == 0:
             print '{} grid points are finished using {} seconds'.format(row_counter, round((time.time() - start_time), 0))
         
+
+def combine_tuning_params(const_param_dict, tuning_param_dict):
+    combined_params = const_param_dict.copy()
+    for key, value in tuning_param_dict.items():
+        combined_params[key] = value
+    return combined_params
+
 
 ## helper function to put dictionary single value into a list
 def list_const_params(params):
