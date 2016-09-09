@@ -7,7 +7,7 @@ from sklearn.cross_validation import StratifiedKFold
 import itertools
 
 
-def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv'):
+def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv', is_xgb_model=False):
     '''
     function to conduct grid search on models using metrics give by eval_func
     Since at each grid point, a different model is initialized; a model_class
@@ -26,9 +26,14 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             model_params[key] = value
             
         ## initiate new model from model_class
-        model = model_class(model_params)
         tmp_train = train.copy()
-        results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+        if not is_xgb_model:
+            model = model_class(model_params)
+            results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+        else:
+            xgb_model = model_class(label_name = dep_var_name, params = model_params)
+            results = xgb_model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
+
         row_content = model_params.values()
         row_content.append(np.mean(results))
         row_content.append(np.std(results))
@@ -41,6 +46,13 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         if row_counter % 10 == 0:
             print '{} grid points are finished using {} seconds'.format(row_counter, round((time.time() - start_time), 0))
         
+
+def combine_tuning_params(const_param_dict, tuning_param_dict):
+    combined_params = const_param_dict.copy()
+    for key, value in tuning_param_dict.items():
+        combined_params[key] = value
+    return combined_params
+
 
 ## helper function to put dictionary single value into a list
 def list_const_params(params):
