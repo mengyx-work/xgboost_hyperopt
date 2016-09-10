@@ -1,10 +1,11 @@
+import yaml
 import pandas as pd
 import numpy as np
 import time, os, sys
 from scipy.stats.mstats import mquantiles
 from . import data_munge
 
-data_path = '/home/ymm/bosch/'
+data_path = '/mnt/home/ymm/kaggle/bosch_data/bosch_complete_processed_data'
 
 train_num_file   = 'train_numeric.csv'
 train_cat_file   = 'train_categorical.csv'
@@ -18,12 +19,22 @@ id_column_name = 'Id'
 dep_var_name = 'Response'
 
 
+def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0'):
+    with open(os.path.join(project_yml_path, data_yaml_file), 'r') as yml_stream:
+        data_dict = yaml.load(yml_stream)
+
+    data_file = os.path.join(data_path, data_dict[data_index]['train_file'])
+    print 'loading bosch data from ', data_file
+    train = pd.read_csv(data_file, index_col='Id')
+    return train
+
+
 def create_grouped_index_df(bin_num):
     ## load the labels and start_time column for train and test data
     start_time = time.time()
-    train_labels = pd.read_csv(data_path + train_num_file, index_col='Id', usecols=['Id', dep_var_name])
+    train_labels            = pd.read_csv(data_path + train_num_file, index_col='Id', usecols=['Id', dep_var_name])
     train_date_start_columm = pd.read_csv(data_path + train_date_file, index_col='Id', usecols=['Id', start_time_column_name])
-    test_date_start_columm = pd.read_csv(data_path + test_date_file, index_col='Id', usecols=['Id', start_time_column_name])
+    test_date_start_columm  = pd.read_csv(data_path + test_date_file, index_col='Id', usecols=['Id', start_time_column_name])
     end_time = time.time()
     print 'data loading takes ', round((end_time - start_time), 1), ' seconds.'
 
@@ -44,13 +55,13 @@ def create_grouped_index_df(bin_num):
 
     ## cut the entire dataframe into different time_windows by start_time
     tmp_train = train_date_start_columm.copy()
-    tmp_test = test_date_start_columm.copy()
+    tmp_test  = test_date_start_columm.copy()
 
     tmp_train['time_window_num'] = pd.cut(tmp_train[start_time_column_name], bins, labels=bin_names)
-    tmp_test['time_window_num'] = pd.cut(tmp_test[start_time_column_name], bins, labels=bin_names)
+    tmp_test['time_window_num']  = pd.cut(tmp_test[start_time_column_name],  bins, labels=bin_names)
     ## create a row number column, start index is 1
     tmp_train['row_num'] = range(1, (tmp_train.shape[0] + 1))
-    tmp_test['row_num'] = range(1, (tmp_test.shape[0] + 1))
+    tmp_test['row_num']  = range(1, (tmp_test.shape[0] + 1))
 
     return tmp_train, tmp_test, bins, bin_names 
 
