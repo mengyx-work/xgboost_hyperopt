@@ -175,7 +175,7 @@ class xgboost_classifier(object):
             dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN)
 
             self.watchlist = [(dtrain, 'train')]
-            self.bst = xgb.train(self.fit_params, dtrain, int(num_round), self.watchlist)
+            self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
 
         #pickle.dump(self.bst, open(self.model_file_name, 'wb'))
         self.bst.save_model(self.model_file_name)
