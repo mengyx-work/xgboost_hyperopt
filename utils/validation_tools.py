@@ -18,6 +18,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
     df = pd.DataFrame(columns=param_dict.keys() + ['avg_score', 'score_std'])
     df.to_csv(result_file)
     row_counter = 0
+
     start_time = time.time()
     ## loop through the grid points  
     for param in params_list:
