@@ -36,9 +36,9 @@ def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_
 
     for index, model_dict in models_dict.items() :
         model_pickle_file = model_dict['model_file']
-    model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
-    column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
-    pred_df[column_name] = model.predict(valid_data)
+        model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
+        column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
+        pred_df[column_name] = model.predict(valid_data)
 
     return pred_df
 
