@@ -108,7 +108,7 @@ class CombinedModel(BaseModel):
             model.fit(train, self.dep_var_name) 
             print 'finished training model indexed {} from combined model'.format(index)
             model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
-            pickle.dump(model, open(model_pickle_file, 'wb'), -1)
+            pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
             model_dict['model_file'] = model_pickle_file
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
@@ -128,19 +128,21 @@ class CombinedModel(BaseModel):
         pred_df = pd.DataFrame()
 
         if self.dep_var_name in data.columns:
-            pred_df['valid_label'] = data[self.dep_var_name]
+            ## add include the valid_label column in result
+            #pred_df['valid_label'] = data[self.dep_var_name]
             valid_data = data.copy()
-            valid_data.drop(dep_var_name, axis=1, inplace=True)
+            valid_data.drop(self.dep_var_name, axis=1, inplace=True)
         else:
             valid_data = data
 
         for index, model_dict in models_dict.items():
             model_pickle_file = model_dict['model_file']
-            model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
+            model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
             pred_df[column_name] = model.predict(valid_data)
 
-        return pred_df
+        result = pred_df.sum(axis=1)
+        return result
 
 
 

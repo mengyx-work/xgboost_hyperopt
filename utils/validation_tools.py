@@ -27,7 +27,6 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         for value, key in zip(param, param_dict.keys()):
             model_params[key] = value
             
-        #print model_params
         ## initiate new model from model_class
         tmp_train = train.copy()
         if not is_xgb_model:
@@ -118,7 +117,6 @@ def score_MCC(ground_truth, scores):
     #print 'score shape:', scores.shape, 
     #print 'mean of groud truth:', fault_frac
     thres_value = np.percentile(scores, 100.*(1-fault_frac), axis=0)
-    #print 'threshold value:', thres_value
     binary_scores = scores > thres_value
     binary_scores = binary_scores.astype(int)
     ## convert to sk-learn format
