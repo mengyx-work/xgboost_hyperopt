@@ -33,7 +33,7 @@ def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_
 
     return pred_df
 
-  
+
 
 def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path, trained_model_yaml_file): 
     
