@@ -97,7 +97,7 @@ class CombinedModel(BaseModel):
         return model
 
                
-    def train(self, train, dep_var_name):
+    def fit(self, train, dep_var_name):
         self.dep_var_name = dep_var_name
         with open(os.path.join(self.model_params['project_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
@@ -116,7 +116,7 @@ class CombinedModel(BaseModel):
 
 
 
-    def predict_combined_model(self, data):
+    def predict(self, data):
         '''
         Prediction results from each model is one column of returned DataFrame
         If data contains the column with 'dep_var_name', this functions create 
