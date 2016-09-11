@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 
-def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_var_name=None): 
+def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_var_name=None):
     '''
     Prediction results from each model is one column of returned DataFrame
     If data contains the column with 'dep_var_name', this functions create 
@@ -25,7 +25,7 @@ def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_
         pred_df['valid_label'] = data[dep_var_name]
         valid_data.drop(dep_var_name, axis=1, inplace=True)
 
-    for index, model_dict in models_dict.items() :
+    for index, model_dict in models_dict.items():
         model_pickle_file = model_dict['model_file']
         model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
         column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
@@ -34,19 +34,15 @@ def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_
     return pred_df
 
 
-
-def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path, trained_model_yaml_file): 
-    
+def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path, trained_model_yaml_file):
     with open(os.path.join(project_path, raw_models_yaml_file), 'r') as yml_stream:
         models_dict = yaml.load(yml_stream)
 
-    for index, model_dict in models_dict.items() :
+    for index, model_dict in models_dict.items():
         tmp_train = train.copy()
         train_label = train[dep_var_name]
         tmp_train.drop(dep_var_name, axis=1, inplace=True)
-      
-        #if model_dict['model_type'] == 'ExtraTree':
-        #    model = ExtraTreeModel(model_dict['model_params'])
+
         model = initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
         model.fit(tmp_train, train_label)
         print 'finished training model indexed {} from combined model'.format(index)
@@ -68,79 +64,146 @@ def initiate_model_by_type(model_type, model_params):
 
     if model_type == 'RandomForest':
         model = RandomForestModel(model_params)
-    
-    return model
 
+    return model
 
 
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
-    
+
     @abc.abstractmethod
     def fit(self, data):
         pass
-    
+
     @abc.abstractmethod
     def predict(self, data):
         pass
+
+
+class CombinedModel(BaseModel):
+    def __init__(self, model_params):
+        super(BaseModel, self).__init__()
+        expected_keys = ['raw_models_yaml_file', 'project_path', 'models_yaml_file']
+        for key in expected_keys:
+            if key not in model_params:
+                sys.exit('the expected key {} does not exist in params'.format(key))
+
+        self.model_params = model_params
+
     
+    @classmethod
+    def _initiate_model_by_type(self, model_type, model_params):
+        '''
+        helper function to initiate the 
+        proper model based on the 'model_type'
+        '''
+        if model_type == 'ExtraTree':
+            model = ExtraTreeModel(model_params)
+
+        if model_type == 'RandomForest':
+            model = RandomForestModel(model_params)
+
+        return model
+
+               
+    def train(self, train, dep_var_name):
+        self.dep_var_name = dep_var_name
+        with open(os.path.join(self.model_params['project_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
+            models_dict = yaml.load(yml_stream)
+
+        for index, model_dict in models_dict.items():
+            tmp_train = train.copy()
+            model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
+            model.fit(tmp_train, self.dep_var_name)
+            print 'finished training model indexed {} from combined model'.format(index)
+            model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
+            pickle.dump(model, open(model_pickle_file, 'wb'), -1)
+            model_dict['model_file'] = model_pickle_file
+
+        with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
+            yaml.dump(models_dict, yml_stream)
+
+
+
+    def predict_combined_model(self, data):
+        '''
+        Prediction results from each model is one column of returned DataFrame
+        If data contains the column with 'dep_var_name', this functions create 
+        an additioanl column of original 'dep_var_name'
+        '''
+        with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'r') as yml_stream:
+            models_dict = yaml.load(yml_stream)
+
+        pred_df = pd.DataFrame()
+        valid_data = data.copy()
+
+        if self.dep_var_name in data.columns:
+            pred_df['valid_label'] = data[self.dep_var_name]
+            valid_data = data.copy()
+            valid_data.drop(dep_var_name, axis=1, inplace=True)
+        else:
+            valid_data = data
+
+        for index, model_dict in models_dict.items():
+            model_pickle_file = model_dict['model_file']
+            model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
+            column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
+            pred_df[column_name] = model.predict(valid_data)
+
+        return pred_df
+
+
+
 
 class ExtraTreeModel(BaseModel):
-  
-  def __init__(self, model_params):
-    super(BaseModel, self).__init__()
-    self.model = ExtraTreesClassifier(**model_params)
-        
+    def __init__(self, model_params):
+        super(BaseModel, self).__init__()
+        self.model = ExtraTreesClassifier(**model_params)
 
-  def fit(self, data, dep_var_name=None):
+    def fit(self, data, dep_var_name=None):
 
-    if dep_var_name is None:
-      sys.exit('dep_var_name is needed for fit function.')
-    else:
-      self.dep_var_name = dep_var_name
-      
-    tmp_data = data.copy()
-    data_label = tmp_data[self.dep_var_name].values
-    tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
-    self.model.fit(tmp_data, data_label)
+        if dep_var_name is None:
+            sys.exit('dep_var_name is needed for fit function.')
+        else:
+            self.dep_var_name = dep_var_name
 
-  
-  def predict(self, data):
-    tmp_data = data.copy()
+        tmp_data = data.copy()
+        data_label = tmp_data[self.dep_var_name].values
+        tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+        self.model.fit(tmp_data, data_label)
 
-    if self.dep_var_name in data.columns:
-      tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+    def predict(self, data):
+        tmp_data = data.copy()
 
-    scores = self.model.predict_proba(tmp_data)
-    return scores[:, 1]
+        if self.dep_var_name in data.columns:
+            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
 
+        scores = self.model.predict_proba(tmp_data)
+        return scores[:, 1]
 
 
 class RandomForestModel(BaseModel):
-    
-  def __init__(self, model_params):
-    super(BaseModel, self).__init__()
-    self.model = RandomForestClassifier(**model_params)
-        
-  def fit(self, data, dep_var_name=None):
+    def __init__(self, model_params):
+        super(BaseModel, self).__init__()
+        self.model = RandomForestClassifier(**model_params)
 
-    if dep_var_name is None:
-      sys.exit('dep_var_name is needed for fit function.')
-    else:
-      self.dep_var_name = dep_var_name
-      
-    tmp_data = data.copy()
-    data_label = tmp_data[self.dep_var_name].values
-    tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
-    self.model.fit(tmp_data, data_label)
+    def fit(self, data, dep_var_name=None):
 
-  
-  def predict(self, data):
-    tmp_data = data.copy()
+        if dep_var_name is None:
+            sys.exit('dep_var_name is needed for fit function.')
+        else:
+            self.dep_var_name = dep_var_name
 
-    if self.dep_var_name in data.columns:
-      tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+        tmp_data = data.copy()
+        data_label = tmp_data[self.dep_var_name].values
+        tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+        self.model.fit(tmp_data, data_label)
 
-    scores = self.model.predict_proba(tmp_data)
-    return scores[:, 1]
+    def predict(self, data):
+        tmp_data = data.copy()
 
+        if self.dep_var_name in data.columns:
+            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+
+        scores = self.model.predict_proba(tmp_data)
+        return scores[:, 1]
