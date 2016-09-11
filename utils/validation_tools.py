@@ -15,7 +15,8 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
     '''
     ## flatten the parameter grid
     params_list = list(itertools.product(*param_dict.values()))
-    df = pd.DataFrame(columns=param_dict.keys() + ['avg_score', 'score_std'])
+    columns_names = param_dict.keys() + ['avg_score', 'score_std']
+    df = pd.DataFrame(columns=columns_names)
     df.to_csv(result_file)
     row_counter = 0
 
@@ -26,6 +27,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         for value, key in zip(param, param_dict.keys()):
             model_params[key] = value
             
+        #print model_params
         ## initiate new model from model_class
         tmp_train = train.copy()
         if not is_xgb_model:
@@ -35,9 +37,12 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             xgb_model = model_class(label_name = dep_var_name, params = model_params)
             results = xgb_model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
 
-        row_content = model_params.values()
+        row_content = []
+        for columns_name in columns_names[:-2]:
+            row_content.append(model_params[columns_name])
         row_content.append(np.mean(results))
         row_content.append(np.std(results))
+
         ## save content into csv file
         df = pd.read_csv(result_file, index_col=0)
         df.loc[row_counter] = row_content
@@ -64,7 +69,7 @@ def list_const_params(params):
 
 
 
-def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold_num=2):
+def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num=2):
     '''
     function to 
     1. create tratified KFold
@@ -77,16 +82,17 @@ def cross_validate_model(train_df, train_label_name, classifier, eval_func, fold
     '''
     
     results = []
-    train_label = train_df[train_label_name]
-    train_df.drop(train_label_name, axis=1, inplace=True)
+    train_label = train_df[dep_var_name]
+    #train_df.drop(dep_var_name, axis=1, inplace=True)
     skf = StratifiedKFold(train_label, fold_num, shuffle=True)
 
     for train, test in skf:
         kfold_train = train_df.iloc[train, :]
-        kfold_train_label = train_label.iloc[train]
+        #kfold_train_label = train_label.iloc[train]
         kfold_test = train_df.iloc[test, :]
         kfold_test_label = train_label.iloc[test]
-        classifier.fit(kfold_train, kfold_train_label)
+        #classifier.fit(kfold_train, kfold_train_label)
+        classifier.fit(kfold_train, dep_var_name)
         scores = classifier.predict(kfold_test)
         result = eval_func(kfold_test_label, scores)
         results.append(result)
@@ -109,10 +115,10 @@ def score_MCC(ground_truth, scores):
 
     tmp_ground_truth = ground_truth[:]
     fault_frac = tmp_ground_truth.mean()
-    print 'score shape:', scores.shape, 
-    print 'mean of groud truth:', fault_frac
+    #print 'score shape:', scores.shape, 
+    #print 'mean of groud truth:', fault_frac
     thres_value = np.percentile(scores, 100.*(1-fault_frac), axis=0)
-    print 'threshold value:', thres_value
+    #print 'threshold value:', thres_value
     binary_scores = scores > thres_value
     binary_scores = binary_scores.astype(int)
     ## convert to sk-learn format
