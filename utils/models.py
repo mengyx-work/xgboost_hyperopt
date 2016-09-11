@@ -86,36 +86,61 @@ class BaseModel(object):
     
 
 class ExtraTreeModel(BaseModel):
-    
-    def __init__(self, model_params):
-        super(BaseModel, self).__init__()
-        self.model = ExtraTreesClassifier(**model_params)
+  
+  def __init__(self, model_params):
+    super(BaseModel, self).__init__()
+    self.model = ExtraTreesClassifier(**model_params)
         
-    def fit(self, data, label):
-        if isinstance(label, pd.Series):
-            label = label.values
 
-        self.model.fit(data, label)
-        
-    def predict(self, data):
-        scores = self.model.predict_proba(data)
-        return scores[:, 1]
+  def fit(self, data, dep_var_name=None):
+
+    if dep_var_name is None:
+      sys.exit('dep_var_name is needed for fit function.')
+    else:
+      self.dep_var_name = dep_var_name
+      
+    tmp_data = data.copy()
+    data_label = tmp_data[self.dep_var_name].values
+    tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+    self.model.fit(tmp_data, data_label)
+
+  
+  def predict(self, data):
+    tmp_data = data.copy()
+
+    if self.dep_var_name in data.columns:
+      tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+
+    scores = self.model.predict_proba(tmp_data)
+    return scores[:, 1]
 
 
 
 class RandomForestModel(BaseModel):
     
-    def __init__(self, model_params):
-        super(BaseModel, self).__init__()
-        self.model = RandomForestClassifier(**model_params)
+  def __init__(self, model_params):
+    super(BaseModel, self).__init__()
+    self.model = RandomForestClassifier(**model_params)
         
-    def fit(self, data, label):
-        if isinstance(label, pd.Series):
-            label = label.values
-        self.model.fit(data, label)
-        
-    def predict(self, data):
-        scores = self.model.predict_proba(data)
-        return scores[:, 1]
+  def fit(self, data, dep_var_name=None):
 
+    if dep_var_name is None:
+      sys.exit('dep_var_name is needed for fit function.')
+    else:
+      self.dep_var_name = dep_var_name
+      
+    tmp_data = data.copy()
+    data_label = tmp_data[self.dep_var_name].values
+    tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+    self.model.fit(tmp_data, data_label)
+
+  
+  def predict(self, data):
+    tmp_data = data.copy()
+
+    if self.dep_var_name in data.columns:
+      tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+
+    scores = self.model.predict_proba(tmp_data)
+    return scores[:, 1]
 
