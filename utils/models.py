@@ -73,6 +73,7 @@ class BaseModel(object):
 class CombinedModel(BaseModel):
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
+        ## check the expected params for combined model
         expected_keys = ['raw_models_yaml_file', 'project_path', 'models_yaml_file']
         for key in expected_keys:
             if key not in model_params:
@@ -102,9 +103,9 @@ class CombinedModel(BaseModel):
             models_dict = yaml.load(yml_stream)
 
         for index, model_dict in models_dict.items():
-            tmp_train = train.copy()
             model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
-            model.fit(tmp_train, self.dep_var_name)
+            ## no copy of train, specific model will spawn a copy of training data
+            model.fit(train, self.dep_var_name) 
             print 'finished training model indexed {} from combined model'.format(index)
             model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
             pickle.dump(model, open(model_pickle_file, 'wb'), -1)
@@ -125,7 +126,6 @@ class CombinedModel(BaseModel):
             models_dict = yaml.load(yml_stream)
 
         pred_df = pd.DataFrame()
-        valid_data = data.copy()
 
         if self.dep_var_name in data.columns:
             pred_df['valid_label'] = data[self.dep_var_name]
