@@ -7,14 +7,8 @@ import abc
 import pandas as pd
 import numpy as np
 
-
+'''
 def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_var_name=None):
-    '''
-    Prediction results from each model is one column of returned DataFrame
-    If data contains the column with 'dep_var_name', this functions create 
-    an additioanl column of original 'dep_var_name'
-    '''
-
     with open(os.path.join(project_path, models_yaml_file), 'r') as yml_stream:
         models_dict = yaml.load(yml_stream)
 
@@ -55,10 +49,6 @@ def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path
 
 
 def initiate_model_by_type(model_type, model_params):
-    '''
-    helper function to initiate the 
-    proper model based on the 'model_type'
-    '''
     if model_type == 'ExtraTree':
         model = ExtraTreeModel(model_params)
 
@@ -66,7 +56,7 @@ def initiate_model_by_type(model_type, model_params):
         model = RandomForestModel(model_params)
 
     return model
-
+'''
 
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
