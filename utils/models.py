@@ -7,22 +7,13 @@ import abc
 import pandas as pd
 import numpy as np
 
-'''
-raw_models_yaml_file = 'raw_combined_models.yml'
-project_path = '/mnt/home/ymm/kaggle/compete/current/combined_model'
-#project_path = '/Users/ymm/Google_Drive/Kaggle/compete/current/combined_model'
-trained_model_yaml_file = 'trained_combined_model.yml'
-
-dep_var_name = 'Response'
-project_yml_path = '/mnt/home/ymm/kaggle/compete/current'
-data_path = '/mnt/home/ymm/kaggle/bosch_data/bosch_complete_processed_data'
-data_yaml_file = 'bosch_processed_data_dict.yml'
-    
-train = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0')
-'''
-
 
 def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_var_name=None): 
+    '''
+    Prediction results from each model is one column of returned DataFrame
+    If data contains the column with 'dep_var_name', this functions create 
+    an additioanl column of original 'dep_var_name'
+    '''
 
     with open(os.path.join(project_path, models_yaml_file), 'r') as yml_stream:
         models_dict = yaml.load(yml_stream)
@@ -67,6 +58,7 @@ def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path
         yaml.dump(models_dict, yml_stream)
 
 
+
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
     
@@ -93,7 +85,6 @@ class ExtraTreeModel(BaseModel):
         
     def predict(self, data):
         scores = self.model.predict_proba(data)
-        print 'score shape:', scores.shape
         return scores[:, 1]
 
 
