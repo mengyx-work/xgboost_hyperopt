@@ -45,9 +45,9 @@ def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path
         train_label = train[dep_var_name]
         tmp_train.drop(dep_var_name, axis=1, inplace=True)
       
-        if model_dict['model_type'] == 'ExtraTree':
-            model = ExtraTreeModel(model_dict['model_params'])
-        
+        #if model_dict['model_type'] == 'ExtraTree':
+        #    model = ExtraTreeModel(model_dict['model_params'])
+        model = initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
         model.fit(tmp_train, train_label)
         print 'finished training model indexed {} from combined model'.format(index)
         model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
@@ -56,6 +56,20 @@ def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path
 
     with open(os.path.join(project_path, trained_model_yaml_file), 'w') as yml_stream:
         yaml.dump(models_dict, yml_stream)
+
+
+def initiate_model_by_type(model_type, model_params):
+    '''
+    helper function to initiate the 
+    proper model based on the 'model_type'
+    '''
+    if model_type == 'ExtraTree':
+        model = ExtraTreeModel(model_params)
+
+    if model_type == 'RandomForest':
+        model = RandomForestModel(model_params)
+    
+    return model
 
 
 
