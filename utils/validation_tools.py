@@ -28,13 +28,13 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
             model_params[key] = value
             
         ## initiate new model from model_class
-        tmp_train = train.copy()
+        #tmp_train = train.copy()
         if not is_xgb_model:
             model = model_class(model_params)
-            results = cross_validate_model(tmp_train, dep_var_name, model, eval_func, fold_num)
+            results = cross_validate_model(train, dep_var_name, model, eval_func, fold_num)
         else:
             xgb_model = model_class(label_name = dep_var_name, params = model_params)
-            results = xgb_model.cross_validate_fit(eval_func, tmp_train, n_folds=fold_num)
+            results = xgb_model.cross_validate_fit(eval_func, train, n_folds=fold_num)
 
         row_content = []
         for columns_name in columns_names[:-2]:
