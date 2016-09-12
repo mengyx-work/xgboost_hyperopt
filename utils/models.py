@@ -1,6 +1,7 @@
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.linear_model import LogisticRegression
 import yaml, os, sys, time
 import cPickle as pickle
 import abc
@@ -116,10 +117,12 @@ class ExtraTreeModel(BaseModel):
         self.model.fit(tmp_data, data_label)
 
     def predict(self, data):
-        tmp_data = data.copy()
 
         if self.dep_var_name in data.columns:
             tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+            tmp_data = data.copy()
+        else:
+            tmp_data = data
 
         scores = self.model.predict_proba(tmp_data)
         ## scores is a numpy array without index
@@ -143,12 +146,47 @@ class RandomForestModel(BaseModel):
         data_label = tmp_data[self.dep_var_name].values
         tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
         self.model.fit(tmp_data, data_label)
+        del tmp_data
 
     def predict(self, data):
-        tmp_data = data.copy()
 
         if self.dep_var_name in data.columns:
             tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+            tmp_data = data.copy()
+        else:
+            tmp_data = data
+
+        scores = self.model.predict_proba(tmp_data)
+        result = pd.Series(scores[:, 1], index=tmp_data.index)
+        return result
+
+
+
+class LogisticRegressionModel(BaseModel):
+    def __init__(self, model_params):
+        super(BaseModel, self).__init__()
+        self.model = LogisticRegression(**model_params)
+
+    def fit(self, data, dep_var_name=None):
+
+        if dep_var_name is None:
+            sys.exit('dep_var_name is needed for fit function.')
+        else:
+            self.dep_var_name = dep_var_name
+
+        tmp_data = data.copy()
+        data_label = tmp_data[self.dep_var_name].values
+        tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+        self.model.fit(tmp_data, data_label)
+        del tmp_data
+
+    def predict(self, data):
+
+        if self.dep_var_name in data.columns:
+            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
+            tmp_data = data.copy()
+        else:
+            tmp_data = data
 
         scores = self.model.predict_proba(tmp_data)
         result = pd.Series(scores[:, 1], index=tmp_data.index)
