@@ -112,7 +112,7 @@ def score_MCC(ground_truth, scores):
     if isinstance(ground_truth, pd.Series):
         ground_truth = ground_truth.values
 
-    tmp_ground_truth = ground_truth[:]
+    tmp_ground_truth = np.copy(ground_truth)
     fault_frac = tmp_ground_truth.mean()
     #print 'score shape:', scores.shape, 
     #print 'mean of groud truth:', fault_frac
