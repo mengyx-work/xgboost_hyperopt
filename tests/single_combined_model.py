@@ -40,6 +40,7 @@ pred_df = combined_model.predict(valid_data)
 pred_df.to_csv('tmp.csv')
 '''
 
+## cross-validate any combined model
 results = cross_validate_model(train, dep_var_name, combined_model, score_MCC, 2)
 print results
 
