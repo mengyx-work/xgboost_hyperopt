@@ -83,7 +83,10 @@ class xgboost_classifier(object):
 
     def _validate_training_data(self, train, split_train = True):
         '''
-        helper function to validate train and label_name
+        helper function to 
+        1. validate train and label_name
+        2. split train into train (a separate DataFrame without label)
+        and the train_label Series
         '''
         if train is None and self.train is None:
             raise ValueError('\n Error: train data is not defined')
@@ -103,6 +106,7 @@ class xgboost_classifier(object):
 
         if split_train:
             train_labels = train[self.label_name]
+            ## a new/different train is created
             train  = train.drop(self.label_name, axis=1)
             return train, train_labels
         else:
@@ -120,11 +124,6 @@ class xgboost_classifier(object):
             raise ValueError('model file is missing.')
 
         if model_file is not None:
-
-            ## check the file format
-            #if model_file[-4:] != '.pkl':
-            #    model_file = '{}.pkl'.format(model_file)
-
             ## update self.model_file_name
             self.model_file_name = model_file
 
@@ -138,6 +137,12 @@ class xgboost_classifier(object):
     def fit(self, train = None, label_name = None, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
+        Design principle
+        1. the full training data is imported with dep_var_name given at the same time
+        2. the full training data as a reference is passed around; for example in the 
+        cross_validate_fit. 
+        3. the train_labels is separated from train by using the function _validate_training_data
+        in the fit function only.
         '''
         self._check_xgboost_params(label_name, params, val)
 
