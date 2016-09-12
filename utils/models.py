@@ -7,56 +7,6 @@ import abc
 import pandas as pd
 import numpy as np
 
-'''
-def predict_combined_model(data, project_path, models_yaml_file, eval_func, dep_var_name=None):
-    with open(os.path.join(project_path, models_yaml_file), 'r') as yml_stream:
-        models_dict = yaml.load(yml_stream)
-
-    pred_df = pd.DataFrame()
-    valid_data = data.copy()
-
-    if dep_var_name is not None:
-        pred_df['valid_label'] = data[dep_var_name]
-        valid_data.drop(dep_var_name, axis=1, inplace=True)
-
-    for index, model_dict in models_dict.items():
-        model_pickle_file = model_dict['model_file']
-        model = pickle.load(open(os.path.join(project_path, model_pickle_file), 'rb'))
-        column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
-        pred_df[column_name] = model.predict(valid_data)
-
-    return pred_df
-
-
-def train_combined_model(train, dep_var_name, raw_models_yaml_file, project_path, trained_model_yaml_file):
-    with open(os.path.join(project_path, raw_models_yaml_file), 'r') as yml_stream:
-        models_dict = yaml.load(yml_stream)
-
-    for index, model_dict in models_dict.items():
-        tmp_train = train.copy()
-        train_label = train[dep_var_name]
-        tmp_train.drop(dep_var_name, axis=1, inplace=True)
-
-        model = initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
-        model.fit(tmp_train, train_label)
-        print 'finished training model indexed {} from combined model'.format(index)
-        model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
-        pickle.dump(model, open(model_pickle_file, 'wb'), -1)
-        model_dict['model_file'] = model_pickle_file
-
-    with open(os.path.join(project_path, trained_model_yaml_file), 'w') as yml_stream:
-        yaml.dump(models_dict, yml_stream)
-
-
-def initiate_model_by_type(model_type, model_params):
-    if model_type == 'ExtraTree':
-        model = ExtraTreeModel(model_params)
-
-    if model_type == 'RandomForest':
-        model = RandomForestModel(model_params)
-
-    return model
-'''
 
 class BaseModel(object):
     __metaclass__ = abc.ABCMeta
@@ -142,6 +92,7 @@ class CombinedModel(BaseModel):
             pred_df[column_name] = model.predict(valid_data)
 
         result = pred_df.sum(axis=1)
+        result.index = valid_data.index
         return result
 
 
@@ -171,7 +122,9 @@ class ExtraTreeModel(BaseModel):
             tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
 
         scores = self.model.predict_proba(tmp_data)
-        return scores[:, 1]
+        ## scores is a numpy array without index
+        result = pd.Series(scores[:, 1], index=tmp_data.index)
+        return result
 
 
 class RandomForestModel(BaseModel):
@@ -198,4 +151,5 @@ class RandomForestModel(BaseModel):
             tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
 
         scores = self.model.predict_proba(tmp_data)
-        return scores[:, 1]
+        result = pd.Series(scores[:, 1], index=tmp_data.index)
+        return result
