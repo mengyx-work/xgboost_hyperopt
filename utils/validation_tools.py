@@ -115,8 +115,9 @@ def score_MCC(ground_truth, scores):
     tmp_ground_truth = np.copy(ground_truth)
     fault_frac = tmp_ground_truth.mean()
     #print 'score shape:', scores.shape, 
-    #print 'mean of groud truth:', fault_frac
+    print 'mean of groud truth:', fault_frac
     thres_value = np.percentile(scores, 100.*(1-fault_frac), axis=0)
+    print 'threshold for preds:', thres_value
     binary_scores = scores > thres_value
     binary_scores = binary_scores.astype(int)
     ## convert to sk-learn format
