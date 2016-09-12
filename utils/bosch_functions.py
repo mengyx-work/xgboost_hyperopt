@@ -9,7 +9,7 @@ from . import data_munge
 #data_path = '/mnt/home/ymm/kaggle/bosch_data/bosch_complete_processed_data'
 
 ## this is the path for raw bosch data
-data_path = '/home/ymm/bosch'
+data_path = '/home/ymm/bosch/'
 
 train_num_file   = 'train_numeric.csv'
 train_cat_file   = 'train_categorical.csv'
