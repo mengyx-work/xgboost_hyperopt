@@ -85,11 +85,11 @@ class CombinedModel(BaseModel):
                 ## for xgboost model, a binary booster is saved insteead of the class object
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model'.format(index, model_dict['model_type'])
                 model_dict['model_file'] = model_pickle_file
-                model_dict['model_params'][CombinedModel.xgb_binary_file_key] = model_pickle_file
+                model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(self.model_params['project_path'], model_pickle_file)
                 model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
                 model.fit(train, self.dep_var_name) 
 
-            print 'finished training model indexed {} from combined model'.format(index)
+            print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
             yaml.dump(models_dict, yml_stream)
@@ -189,8 +189,8 @@ class ExtraTreeModel(BaseModel):
     def predict(self, data):
 
         if self.dep_var_name in data.columns:
-            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
             tmp_data = data.copy()
+            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
         else:
             tmp_data = data
 
@@ -201,9 +201,11 @@ class ExtraTreeModel(BaseModel):
 
 
 class RandomForestModel(BaseModel):
+
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
         self.model = RandomForestClassifier(**model_params)
+
 
     def fit(self, data, dep_var_name=None):
 
@@ -221,8 +223,8 @@ class RandomForestModel(BaseModel):
     def predict(self, data):
 
         if self.dep_var_name in data.columns:
-            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
             tmp_data = data.copy()
+            tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
         else:
             tmp_data = data
 
