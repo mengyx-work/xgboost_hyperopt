@@ -1,4 +1,5 @@
 import xgboost as xgb
+import operator, tempfile
 import time, sys, os
 import pickle
 import numpy as np
@@ -41,7 +42,6 @@ class xgboost_classifier(object):
         #self.params['nthread']                  = 2 * multiprocessing.cpu_count()
         #self.params['nthread']                  = 8
 
-        #self.model_file_name = '{}.pkl'.format(model_file)
         self.model_file_name = model_file
         self.use_weights     = use_weights
 
@@ -136,6 +136,24 @@ class xgboost_classifier(object):
         self.bst.load_model(self.model_file_name)
 
 
+    def _ceate_feature_map(self, features, fea_map_file):
+        with open(fea_map_file, 'w') as outfile:
+            i = 0
+            for feat in features:
+                outfile.write('{0}\t{1}\tq\n'.format(i, feat))
+                i = i + 1
+
+
+    def _create_feature_importance_map(self, fea_map_file):
+        importance = self.bst.get_fscore(fmap = fea_map_file)
+        importance = sorted(importance.items(), key = operator.itemgetter(1))
+
+        df = pd.DataFrame(importance, columns=['feature', 'fscore'])
+        df['norm_fscore'] = df['fscore'] / df['fscore'].sum()
+        df.to_csv(self.model_file_name + '_feature_importance.csv')
+        os.remove(fea_map_file)
+
+
     def fit(self, train = None, label_name = None, use_weights = False, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
@@ -160,6 +178,9 @@ class xgboost_classifier(object):
 
         ## split the train_labels from train
         train, train_labels = self._validate_training_data(train, split_train = True)
+        tmpfile = tempfile.NamedTemporaryFile(mode='w', prefix='xgbFeaMap_',delete=False)
+        self.fea_map_file = tmpfile.name
+        self._ceate_feature_map(train.columns, self.fea_map_file)
 
         num_round   = self.fit_params['num_round']
         val         = self.fit_params['val']
@@ -210,8 +231,9 @@ class xgboost_classifier(object):
 
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
+        
+        self._create_feature_importance_map(self.fea_map_file)
 
-        #pickle.dump(self.bst, open(self.model_file_name, 'wb'))
         self.bst.save_model(self.model_file_name)
         print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
 
@@ -246,13 +268,6 @@ class xgboost_classifier(object):
             kfold_train = train.iloc[train_index, :]
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
-            '''
-            if use_weights:
-                weights = self._create_weight_by_label(kfold_train[self.label_name])
-                self.fit(train = kfold_train, weights = weights)
-            else:
-                self.fit(train = kfold_train)
-            '''
             self.fit(train = kfold_train, use_weights = use_weights)
             scores = self.predict(kfold_test)
             result = eval_func(kfold_test_label, scores)

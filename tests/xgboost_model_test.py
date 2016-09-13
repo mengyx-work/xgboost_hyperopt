@@ -30,6 +30,7 @@ params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
 params['eval_metric']              = 'auc'
 params["seed"]                     = 100
+params['scale_pos_weight']         = 10.
 ## whether to use weights
 params['use_weights']              = True
 
@@ -39,4 +40,4 @@ params["val"]                      = False
 model = XgboostModel(params)
 model.fit(train, dep_var_name)
 valid_result = model.predict(valid_data)
-print score_MCC(valid_label, valid_result)
+print 'the MCC score:', score_MCC(valid_label, valid_result)
