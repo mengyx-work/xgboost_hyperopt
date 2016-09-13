@@ -4,6 +4,7 @@ import os, sys, time
 
 sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
 import utils
+from utils.wrapped_xgboost import xgboost_classifier
 from utils.models import RandomForestModel, ExtraTreeModel, XgboostModel
 from utils.validation_tools import score_MCC, create_validation_index
 from utils.bosch_functions import load_processed_bosch_data
@@ -41,3 +42,8 @@ model = XgboostModel(params)
 model.fit(train, dep_var_name)
 valid_result = model.predict(valid_data)
 print 'the MCC score:', score_MCC(valid_label, valid_result)
+
+## use the cross_validate_fit function
+xgb_clf = xgboost_classifier(label_name = dep_var_name, params = params)
+results = xgb_clf.cross_validate_fit(score_MCC, train, n_folds=2)
+print 'results from cross validation:', results
