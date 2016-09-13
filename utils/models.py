@@ -24,6 +24,10 @@ class BaseModel(object):
 
 
 class CombinedModel(BaseModel):
+
+    ## key for the xgboost binary file 
+    xgb_binary_file_key = 'xgb_binary_file_name'
+
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
         ## check the expected params for combined model
@@ -48,25 +52,44 @@ class CombinedModel(BaseModel):
             model = RandomForestModel(model_params)
 
         if model_type == 'Xgboost':
-            model = XgboostModel(model_params)
+            ## use the XgboostModel class
+            #model = XgboostModel(model_params)
 
+            ## directly use the xgboost_classifier
+            binary_file_name = model_params.pop(CombinedModel.xgb_binary_file_key, 'combined_model_xgboost_binary_file')
+            use_weights      = model_params.pop('use_weights', False)
+            model = xgboost_classifier(params = model_params, use_weights = use_weights, model_file = binary_file_name)
 
         return model
 
                
     def fit(self, train, dep_var_name):
+        ## store the dep_var_nme on the combined model.
+        ## because the Xgboost model can not be directly
+        ## pickled, only a binary booster is saved.
         self.dep_var_name = dep_var_name
+
         with open(os.path.join(self.model_params['project_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
 
         for index, model_dict in models_dict.items():
-            model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
-            ## no copy of train, specific model will spawn a copy of training data
-            model.fit(train, self.dep_var_name) 
+
+            if model_dict['model_type'] != 'Xgboost':
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
+                model_dict['model_file'] = model_pickle_file
+                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
+                ## no copy of train, specific model will spawn a copy of training data
+                model.fit(train, self.dep_var_name) 
+                pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
+            else:
+                ## for xgboost model, a binary booster is saved insteead of the class object
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model'.format(index, model_dict['model_type'])
+                model_dict['model_file'] = model_pickle_file
+                model_dict['model_params'][CombinedModel.xgb_binary_file_key] = model_pickle_file
+                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
+                model.fit(train, self.dep_var_name) 
+
             print 'finished training model indexed {} from combined model'.format(index)
-            model_pickle_file = 'indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
-            pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
-            model_dict['model_file'] = model_pickle_file
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
             yaml.dump(models_dict, yml_stream)
@@ -84,6 +107,7 @@ class CombinedModel(BaseModel):
 
         pred_df = pd.DataFrame()
 
+        '''
         if self.dep_var_name in data.columns:
             ## add include the valid_label column in result
             #pred_df['valid_label'] = data[self.dep_var_name]
@@ -91,27 +115,39 @@ class CombinedModel(BaseModel):
             valid_data.drop(self.dep_var_name, axis=1, inplace=True)
         else:
             valid_data = data
+        '''
 
         for index, model_dict in models_dict.items():
+            ## load the pickle file name
             model_pickle_file = model_dict['model_file']
-            model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
+
+            if model_dict['model_type'] != 'Xgboost':
+                model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
+            else:
+                model = xgboost_classifier(label_name = self.dep_var_name)
+                model.load_model_from_file(os.path.join(self.model_params['project_path'], model_pickle_file))
+                
+            ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
-            pred_df[column_name] = model.predict(valid_data)
+            pred_df[column_name] = model.predict(data)
 
         result = pred_df.sum(axis=1)
-        result.index = valid_data.index
+        result.index = data.index
         return result
 
 
 
 
 class XgboostModel(BaseModel):
+
     def __init__(self, model_params):
         ## extract the use_weights param from the param dictionary
         ## also remove the 'use_weights' from the param dictionary
         use_weights = model_params.pop('use_weights', False)
+        binary_model_file  = model_params.pop('binary_model_file', 'xgb_binary_model')
         super(BaseModel, self).__init__()
-        self.model = xgboost_classifier(params = model_params, use_weights = use_weights)
+        self.model = xgboost_classifier(params = model_params, use_weights = use_weights, model_file = binary_model_file)
+
 
     def fit(self, data, dep_var_name=None):
         if dep_var_name is None:
@@ -119,6 +155,7 @@ class XgboostModel(BaseModel):
         else:
             self.dep_var_name = dep_var_name
         self.model.fit(data, self.dep_var_name)
+
 
     def predict(self, data):
         scores = self.model.predict(data)
@@ -130,9 +167,11 @@ class XgboostModel(BaseModel):
 
 
 class ExtraTreeModel(BaseModel):
+
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
         self.model = ExtraTreesClassifier(**model_params)
+
 
     def fit(self, data, dep_var_name=None):
 
@@ -145,6 +184,7 @@ class ExtraTreeModel(BaseModel):
         data_label = tmp_data[self.dep_var_name].values
         tmp_data.drop(self.dep_var_name, axis=1, inplace=True)
         self.model.fit(tmp_data, data_label)
+
 
     def predict(self, data):
 

@@ -276,7 +276,7 @@ class xgboost_classifier(object):
 
         dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
 
-        if self.best_iters is not None:
+        if hasattr(self, 'best_iters') and self.best_iters is not None:
             y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
         else:
             y_prob = self.bst.predict(dtest)
