@@ -47,6 +47,10 @@ class CombinedModel(BaseModel):
         if model_type == 'RandomForest':
             model = RandomForestModel(model_params)
 
+        if model_type == 'Xgboost':
+            model = XgboostModel(model_params)
+
+
         return model
 
                
@@ -102,7 +106,10 @@ class CombinedModel(BaseModel):
 
 
 class XgboostModel(BaseModel):
-    def __init__(self, model_params, use_weights=False):
+    def __init__(self, model_params):
+        ## extract the use_weights param from the param dictionary
+        ## also remove the 'use_weights' from the param dictionary
+        use_weights = model_params.pop('use_weights', False)
         super(BaseModel, self).__init__()
         self.model = xgboost_classifier(params = model_params, use_weights = use_weights)
 

@@ -153,7 +153,7 @@ class xgboost_classifier(object):
         use_weights = any([use_weights, self.use_weights])
         
         if use_weights:
-            weights = self._create_weight_by_label(kfold_train[self.label_name])
+            weights = self._create_weight_by_label(train[self.label_name])
             ## check the weight dimension with train
             if len(weights) != train.shape[0]:
                 sys.exit('the weights dimension {} does not match train {}, abort...'.format(len(weights), train.shape[0]))

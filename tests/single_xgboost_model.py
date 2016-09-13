@@ -30,6 +30,8 @@ params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
 params['eval_metric']              = 'auc'
 params["seed"]                     = 100
+## whether to use weights
+params['use_weights']              = True
 
 params["val"]                      = False
 #params["early_stopping_ratio"]     = 0.2
