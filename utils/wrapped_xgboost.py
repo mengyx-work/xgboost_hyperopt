@@ -134,7 +134,7 @@ class xgboost_classifier(object):
         self.bst.load_model(self.model_file_name)
 
 
-    def fit(self, train = None, label_name = None, params = None, val = None):
+    def fit(self, train = None, label_name = None, weights = None, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
         Design principle
@@ -145,6 +145,9 @@ class xgboost_classifier(object):
         in the fit function only.
         '''
         self._check_xgboost_params(label_name, params, val)
+        ## if weights is not None, check the dimension with train
+        if weights is not None and len(weights) != train.shape[0]:
+            sys.exit('the weights dimension does not match train data, abort.')
 
         train, train_labels = self._validate_training_data(train, split_train = True)
 
@@ -159,13 +162,25 @@ class xgboost_classifier(object):
             sys.stderr.write('\n####################\n train the xgboost with early stopping\n####################\n')
             # define the offset for early stopping #
             EARLY_STOP_OFFSET = int(train.shape[0] * self.fit_params['early_stopping_ratio'])
-            dvalid = xgb.DMatrix(np.array(train)[:EARLY_STOP_OFFSET],
-                                 label = np.array(train_labels)[:EARLY_STOP_OFFSET],
-                                 missing = np.NaN)
 
-            dtrain = xgb.DMatrix(np.array(train)[EARLY_STOP_OFFSET:],
-                                 label = np.array(train_labels)[EARLY_STOP_OFFSET:],
-                                 missing = np.NaN)
+            if weights is None:
+                dvalid = xgb.DMatrix(np.array(train)[:EARLY_STOP_OFFSET],
+                                     label = np.array(train_labels)[:EARLY_STOP_OFFSET],
+                                     missing = np.NaN)
+
+                dtrain = xgb.DMatrix(np.array(train)[EARLY_STOP_OFFSET:],
+                                     label = np.array(train_labels)[EARLY_STOP_OFFSET:],
+                                     missing = np.NaN)
+            else:
+                print 'weights are used for xgboost training data...'
+                dvalid = xgb.DMatrix(np.array(train)[:EARLY_STOP_OFFSET],
+                                     label = np.array(train_labels)[:EARLY_STOP_OFFSET],
+                                     missing = np.NaN, weight=weights[:EARLY_STOP_OFFSET])
+
+                dtrain = xgb.DMatrix(np.array(train)[EARLY_STOP_OFFSET:],
+                                     label = np.array(train_labels)[EARLY_STOP_OFFSET:],
+                                     missing = np.NaN, weight=weights[EARLY_STOP_OFFSET:])
+
 
             self.watchlist = [(dtrain, 'train'), (dvalid, 'val')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist, early_stopping_rounds = self._EARLY_STOPPING_ROUNDS)
@@ -177,7 +192,11 @@ class xgboost_classifier(object):
 
         else:
             sys.stderr.write('\n####################\n train the xgboost without early stopping\n####################\n')
-            dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN)
+            if weights is None:
+                dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN)
+            else:
+                print 'weights are used for xgboost training data...'
+                dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN, weight=weights)
 
             self.watchlist = [(dtrain, 'train')]
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
