@@ -10,6 +10,8 @@ from utils.models import CombinedModel
 from utils.validation_tools import score_MCC, create_validation_index, cross_validate_model
 
 dep_var_name = 'Response'
+
+## combined model information
 raw_models_yaml_file = 'raw_combined_models.yml'
 trained_model_yaml_file = 'trained_combined_model.yml'
 project_path = '/mnt/home/ymm/kaggle/compete/current/combined_model'
@@ -21,7 +23,7 @@ data_path = '/mnt/home/ymm/kaggle/bosch_data/bosch_complete_processed_data'
 data_yaml_file = 'bosch_processed_data_dict.yml'
 
 train = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0')
-train_index, valid_index = create_validation_index(train, 0.2, dep_var_name, True)  
+train_index, valid_index = create_validation_index(train, 0.4, dep_var_name, True)  
 valid_data = train.ix[valid_index]
 tmp_train  = train.ix[train_index]
 
@@ -31,14 +33,8 @@ combined_model_params['raw_models_yaml_file'] = raw_models_yaml_file
 combined_model_params['project_path'] = project_path
 combined_model_params['models_yaml_file'] = trained_model_yaml_file
 
+## build the combined model
 combined_model = CombinedModel(combined_model_params)
-
-'''
-## regular fit and predict
-combined_model.fit(tmp_train, dep_var_name)
-pred_df = combined_model.predict(valid_data)
-pred_df.to_csv('tmp.csv')
-'''
 
 ## cross-validate any combined model
 results = cross_validate_model(train, dep_var_name, combined_model, score_MCC, 2)

@@ -20,7 +20,6 @@ valid_data  = train.ix[valid_index]
 train       = train.ix[train_index]
 valid_label = valid_data[dep_var_name]
 
-
 model_params =  {'random_state' : 0, 'n_estimators' : 500, 'max_depth' : 4, 'criterion' : 'entropy', 'n_jobs' : -1}
 model = ExtraTreeModel(model_params)
 model.fit(train, dep_var_name)
