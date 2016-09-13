@@ -7,6 +7,8 @@ import cPickle as pickle
 import abc
 import pandas as pd
 import numpy as np
+## internal class
+from wrapped_xgboost import xgboost_classifier
 
 
 class BaseModel(object):
@@ -109,7 +111,7 @@ class XgboostModel(BaseModel):
             sys.exit('dep_var_name is needed for fit function.')
         else:
             self.dep_var_name = dep_var_name
-        self.model.fit(data, data_label)
+        self.model.fit(data, self.dep_var_name)
 
     def predict(self, data):
         scores = self.model.predict(data)
