@@ -99,6 +99,27 @@ class CombinedModel(BaseModel):
 
 
 
+class XgboostModel(BaseModel):
+    def __init__(self, model_params, use_weights=False):
+        super(BaseModel, self).__init__()
+        self.model = xgboost_classifier(params = model_params, use_weights = use_weights)
+
+    def fit(self, data, dep_var_name=None):
+        if dep_var_name is None:
+            sys.exit('dep_var_name is needed for fit function.')
+        else:
+            self.dep_var_name = dep_var_name
+        self.model.fit(data, data_label)
+
+    def predict(self, data):
+        scores = self.model.predict(data)
+        ## scores is a numpy array without index
+        result = pd.Series(scores, index=data.index)
+        return result
+
+
+
+
 class ExtraTreeModel(BaseModel):
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
