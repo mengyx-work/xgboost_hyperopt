@@ -21,7 +21,7 @@ class xgboost_classifier(object):
     3. cross_validate_fit uses fit and predict functions, so it doesn't remove dep_var column
     '''
 
-    def __init__(self, train = None, label_name = None, params = None, model_file = './current_xgboost_model'):
+    def __init__(self, train = None, label_name = None, params = None, use_weights = False, model_file = './current_xgboost_model'):
 
         self.params = {}
 
@@ -43,6 +43,7 @@ class xgboost_classifier(object):
 
         #self.model_file_name = '{}.pkl'.format(model_file)
         self.model_file_name = model_file
+        self.use_weights     = use_weights
 
         if params is not None:
             for key, value in params.iteritems():
@@ -85,7 +86,7 @@ class xgboost_classifier(object):
     def _validate_training_data(self, train, split_train = True):
         '''
         helper function to 
-        1. validate train and label_name
+        1. validate train and label_name are legit
         2. split train into train (a separate DataFrame without label)
         and the train_label Series
         '''
@@ -135,7 +136,7 @@ class xgboost_classifier(object):
         self.bst.load_model(self.model_file_name)
 
 
-    def fit(self, train = None, label_name = None, weights = None, params = None, val = None):
+    def fit(self, train = None, label_name = None, use_weights = False, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
         Design principle
@@ -145,11 +146,19 @@ class xgboost_classifier(object):
         3. the train_labels is separated from train by using the function _validate_training_data
         in the fit function only.
         '''
+        ## load the params
         self._check_xgboost_params(label_name, params, val)
-        ## if weights is not None, check the dimension with train
-        if weights is not None and len(weights) != train.shape[0]:
-            sys.exit('the weights dimension {} does not match train {}, abort...'.format(len(weights), train.shape[0]))
 
+        ## combine the initial param with current use_weights
+        use_weights = any([use_weights, self.use_weights])
+        
+        if use_weights:
+            weights = self._create_weight_by_label(kfold_train[self.label_name])
+            ## check the weight dimension with train
+            if len(weights) != train.shape[0]:
+                sys.exit('the weights dimension {} does not match train {}, abort...'.format(len(weights), train.shape[0]))
+
+        ## split the train_labels from train
         train, train_labels = self._validate_training_data(train, split_train = True)
 
         num_round   = self.fit_params['num_round']
@@ -164,7 +173,7 @@ class xgboost_classifier(object):
             # define the offset for early stopping #
             EARLY_STOP_OFFSET = int(train.shape[0] * self.fit_params['early_stopping_ratio'])
 
-            if weights is None:
+            if not use_weights:
                 dvalid = xgb.DMatrix(np.array(train)[:EARLY_STOP_OFFSET],
                                      label = np.array(train_labels)[:EARLY_STOP_OFFSET],
                                      missing = np.NaN)
@@ -193,7 +202,7 @@ class xgboost_classifier(object):
 
         else:
             sys.stderr.write('\n####################\n train the xgboost without early stopping\n####################\n')
-            if weights is None:
+            if not use_weights:
                 dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN)
             else:
                 print 'weights are used for xgboost training data...'
@@ -237,11 +246,14 @@ class xgboost_classifier(object):
             kfold_train = train.iloc[train_index, :]
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
+            '''
             if use_weights:
                 weights = self._create_weight_by_label(kfold_train[self.label_name])
                 self.fit(train = kfold_train, weights = weights)
             else:
                 self.fit(train = kfold_train)
+            '''
+            self.fit(train = kfold_train, use_weights = use_weights)
             scores = self.predict(kfold_test)
             result = eval_func(kfold_test_label, scores)
             results.append(result)
