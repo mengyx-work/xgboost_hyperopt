@@ -4,7 +4,7 @@ import os, sys, time
 
 sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
 import utils
-from utils.models import RandomForestModel, ExtraTreeModel
+from utils.models import RandomForestModel, ExtraTreeModel, XgboostModel
 from utils.validation_tools import score_MCC, create_validation_index
 from utils.bosch_functions import load_processed_bosch_data
 
@@ -20,9 +20,21 @@ valid_data  = train.ix[valid_index]
 train       = train.ix[train_index]
 valid_label = valid_data[dep_var_name]
 
+params = {}
+params["eta"]                      = 0.0075
+params["subsample"]                = 0.8
+params["colsample_bytree"]         = 0.8
+params["num_round"]                = 15
+params["max_depth"]                = 5
+params["gamma"]                    = 0
+params["metrics"]                  = 'auc'
+params['eval_metric']              = 'auc'
+params["seed"]                     = 100
 
-model_params =  {'random_state' : 0, 'n_estimators' : 500, 'max_depth' : 4, 'criterion' : 'entropy', 'n_jobs' : -1}
-model = ExtraTreeModel(model_params)
+params["val"]                      = False
+#params["early_stopping_ratio"]     = 0.2
+
+model = XgboostModel(params)
 model.fit(train, dep_var_name)
 valid_result = model.predict(valid_data)
 print score_MCC(valid_label, valid_result)
