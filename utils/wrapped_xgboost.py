@@ -2,6 +2,7 @@ import xgboost as xgb
 import time, sys, os
 import pickle
 import numpy as np
+import pandas as pd
 import multiprocessing
 from sklearn import cross_validation
 from sklearn import metrics
@@ -237,7 +238,7 @@ class xgboost_classifier(object):
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
             if use_weights:
-                weights = self._create_weight_by_label(kfold_train[self.dep_var_name])
+                weights = self._create_weight_by_label(kfold_train[self.label_name])
                 self.fit(train = kfold_train, weights = weights)
             else:
                 self.fit(train = kfold_train)
