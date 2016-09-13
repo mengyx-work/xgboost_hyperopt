@@ -147,7 +147,7 @@ class xgboost_classifier(object):
         self._check_xgboost_params(label_name, params, val)
         ## if weights is not None, check the dimension with train
         if weights is not None and len(weights) != train.shape[0]:
-            sys.exit('the weights dimension does not match train data, abort.')
+            sys.exit('the weights dimension {} does not match train {}, abort...'.format(len(weights), train.shape[0]))
 
         train, train_labels = self._validate_training_data(train, split_train = True)
 
@@ -207,20 +207,40 @@ class xgboost_classifier(object):
 
         return self
 
-    def cross_validate_fit(self, eval_func, train = None, label_name = None, params = None, val = None, n_folds = 5):
+
+    def _create_weight_by_label(self, label):
+        if isinstance(label, pd.Series):
+            label = label.values
+        scale_pos_weight = 1. * np.sum(label == 0) / np.sum(label == 1)
+        print 'scale_pos_weight:', scale_pos_weight
+
+        init_weight = np.copy(label)
+
+        np.place(init_weight, init_weight==1, scale_pos_weight)
+        np.place(init_weight, init_weight==0, 1.)
+
+        init_weight = init_weight.astype(float)
+        return init_weight
+
+
+    def cross_validate_fit(self, eval_func, train = None, label_name = None, use_weights=False, params = None, val = None, n_folds = 5):
         
         self._check_xgboost_params(label_name, params, val)
         train = self._validate_training_data(train, split_train = False)
         results = []
-        print 'label name:', self.label_name
+        #print 'label name:', self.label_name
         skf = StratifiedKFold(train[self.label_name], n_folds, shuffle=True)
-        print 'train shape:', train.shape
+        #print 'train shape:', train.shape
 
         for train_index, test_index in skf:
             kfold_train = train.iloc[train_index, :]
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
-            self.fit(kfold_train)
+            if use_weights:
+                weights = self._create_weight_by_label(kfold_train[self.dep_var_name])
+                self.fit(train = kfold_train, weights = weights)
+            else:
+                self.fit(train = kfold_train)
             scores = self.predict(kfold_test)
             result = eval_func(kfold_test_label, scores)
             results.append(result)
