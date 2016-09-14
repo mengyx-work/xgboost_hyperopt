@@ -99,6 +99,24 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
     return results
 
 
+def MCC(ground_truth, scores):
+
+    if isinstance(scores, pd.Series):
+        scores = scores.values
+
+    if isinstance(ground_truth, pd.Series):
+        ground_truth = ground_truth.values
+
+    tmp_ground_truth = np.copy(ground_truth)
+    tmp_scores = np.copy(scores)
+    ## convert to sk-learn format
+    np.place(tmp_scores, tmp_scores == 0, -1)
+    np.place(ground_truth, ground_truth == 0, -1)
+
+    return matthews_corrcoef(tmp_ground_truth, tmp_scores)
+
+
+
 def score_MCC(ground_truth, scores):
     '''
     assuming the model output is the probability of being default,
