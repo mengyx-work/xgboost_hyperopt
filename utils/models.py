@@ -136,6 +136,7 @@ class CombinedModel(BaseModel):
 
             ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
+
             ## traditional way to collect data from each model
             #pred_df[column_name] = model.predict(data)
 
@@ -143,20 +144,28 @@ class CombinedModel(BaseModel):
             ## convert scores into rank
             mean_faulted_rate = model_dict['fault_rate']
             scores = model.predict(data)
-            score_index = np.argsort(scores)
-            pred_df[column_name] = range(1, len(score_index)+1)[score_index]
+            #pred_df['score_' + column_name] = scores 
+            pred_df[column_name] = pd.Series(scores).rank()
 
+        #'''
         result = pred_df.sum(axis=1)
-        result.index = data.index
-        result.sort()
+        pred_data_index =data.index
+        result.index = pred_data_index
+        result.sort_values(inplace = True)
         print 'prediction using the mean faulted rate:', mean_faulted_rate
-        thres_index = int(mean_faulted_rate * len(score_index))
+        thres_index = int(mean_faulted_rate * len(pred_data_index))
         result[:-thres_index] = 0
         result[-thres_index:] = 1
+        result = result.ix[pred_data_index]
+        result.to_csv('tmp_results.csv')
         return result
+        #'''
         
 
         '''
+        pred_df.index = data.index
+        pred_df['label'] = data[self.dep_var_name]
+        pred_df.to_csv('tmp_pred_df.csv')
         result = pred_df.sum(axis=1)
         result.index = data.index
         return result
