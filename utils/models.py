@@ -72,6 +72,9 @@ class CombinedModel(BaseModel):
         with open(os.path.join(self.model_params['project_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
 
+        ## param prepared for Kaggle Bosch
+        mean_faulted_rate = np.mean(train[self.dep_var_name])
+
         for index, model_dict in models_dict.items():
 
             if model_dict['model_type'] != 'Xgboost':
@@ -89,6 +92,9 @@ class CombinedModel(BaseModel):
                 model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
                 model.fit(train, self.dep_var_name) 
 
+            ## Kaggle Bosch
+            ## the same date share this param across different models
+            model_dict['fault_rate'] = mean_faulted_rate
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
@@ -127,13 +133,34 @@ class CombinedModel(BaseModel):
                 model = xgboost_classifier(label_name = self.dep_var_name)
                 model.load_model_from_file(os.path.join(self.model_params['project_path'], model_pickle_file))
                 
+
             ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
-            pred_df[column_name] = model.predict(data)
+            ## traditional way to collect data from each model
+            #pred_df[column_name] = model.predict(data)
+
+            ## Bosch
+            ## convert scores into rank
+            mean_faulted_rate = model_dict['fault_rate']
+            scores = model.predict(data)
+            score_index = np.argsort(scores)
+            pred_df[column_name] = range(1, len(score_index)+1)[score_index]
 
         result = pred_df.sum(axis=1)
         result.index = data.index
+        result.sort()
+        print 'prediction using the mean faulted rate:', mean_faulted_rate
+        thres_index = int(mean_faulted_rate * len(score_index))
+        result[:-thres_index] = 0
+        result[-thres_index:] = 1
         return result
+        
+
+        '''
+        result = pred_df.sum(axis=1)
+        result.index = data.index
+        return result
+        '''
 
 
 
