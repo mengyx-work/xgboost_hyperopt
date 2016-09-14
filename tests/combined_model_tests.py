@@ -49,8 +49,8 @@ tmp_train  = train.ix[train_index]
 
 combined_model.fit(train, dep_var_name)
 pred_df = combined_model.predict(valid_data)
-#print MCC(valid_data[dep_var_name], pred_df)
-print score_MCC(valid_data[dep_var_name], pred_df)
+print MCC(valid_data[dep_var_name], pred_df)
+#print score_MCC(valid_data[dep_var_name], pred_df)
 #'''
 
 
