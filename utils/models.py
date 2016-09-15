@@ -64,13 +64,20 @@ class CombinedModel(BaseModel):
 
                
     def fit(self, train, dep_var_name):
+
         ## store the dep_var_nme on the combined model.
         ## because the Xgboost model can not be directly
         ## pickled, only a binary booster is saved.
+
         self.dep_var_name = dep_var_name
 
-        with open(os.path.join(self.model_params['project_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
+        with open(os.path.join(self.model_params['raw_models_yaml_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
+
+        if not os.path.exists(self.model_params['project_path']):
+            os.makedirs(self.model_params['project_path'])
+        else:
+            print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
 
         ## param prepared for Kaggle Bosch
         mean_faulted_rate = np.mean(train[self.dep_var_name])
