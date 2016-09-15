@@ -1,7 +1,7 @@
 import xgboost as xgb
 import operator, tempfile
 import time, sys, os
-import pickle
+import pickle, warnings
 import numpy as np
 import pandas as pd
 import multiprocessing
@@ -287,8 +287,10 @@ class xgboost_classifier(object):
             raise ValueError('test data is not defined.')
 
         if self.label_name not in test.columns:
-            raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
-            sys.exit(0)
+            warnings.warn('in the xgboost prediction, test data does not contain label column {}'.format(self.label_name))
+            ## test data may not contain the label_name column
+            #raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
+            #sys.exit(0)
 
         test_labels = test[self.label_name]
         test_data = test.drop(self.label_name, axis=1)
