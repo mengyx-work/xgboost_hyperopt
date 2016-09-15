@@ -52,9 +52,6 @@ class CombinedModel(BaseModel):
             model = RandomForestModel(model_params)
 
         if model_type == 'Xgboost':
-            ## use the XgboostModel class
-            #model = XgboostModel(model_params)
-
             ## directly use the xgboost_classifier
             binary_file_name = model_params.pop(CombinedModel.xgb_binary_file_key, 'combined_model_xgboost_binary_file')
             use_weights      = model_params.pop('use_weights', False)
@@ -119,17 +116,7 @@ class CombinedModel(BaseModel):
             models_dict = yaml.load(yml_stream)
 
         pred_df = pd.DataFrame()
-
-        '''
-        if self.dep_var_name in data.columns:
-            ## add include the valid_label column in result
-            #pred_df['valid_label'] = data[self.dep_var_name]
-            valid_data = data.copy()
-            valid_data.drop(self.dep_var_name, axis=1, inplace=True)
-        else:
-            valid_data = data
-        '''
-
+       
         for index, model_dict in models_dict.items():
             ## load the pickle file name
             model_pickle_file = model_dict['model_file']
@@ -151,10 +138,10 @@ class CombinedModel(BaseModel):
             ## convert scores into rank
             mean_faulted_rate = model_dict['fault_rate']
             scores = model.predict(data)
-            #pred_df['score_' + column_name] = scores 
             pred_df[column_name] = pd.Series(scores).rank()
 
         #'''
+        ## Bosch way to aggregate the predictions from different models
         result = pred_df.sum(axis=1)
         pred_data_index =data.index
         result.index = pred_data_index
