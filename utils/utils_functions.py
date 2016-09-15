@@ -5,7 +5,22 @@ import sys
 import os.path
 from random import shuffle
 from sklearn import metrics
-from sklearn import datasets
+from sk:qearn import datasets
+
+class print_colors:
+    '''
+    different colors to use
+    in print out
+    '''
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 
 class utils_functions(object):
 
@@ -93,6 +108,7 @@ class utils_functions(object):
 
         return train_data, valid_data
     '''
+
 
     @classmethod
     def convert_xgboost_data(self, train_data, dep_var_name='dep_var'):

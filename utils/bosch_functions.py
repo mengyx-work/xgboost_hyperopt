@@ -23,10 +23,11 @@ id_column_name = 'Id'
 dep_var_name = 'Response'
 
 
-def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0', load_test=False):
+#def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0', load_test=False):
+def load_processed_bosch_data(data_path, data_yaml_file, data_index='0', load_test=False):
 
     ## TODO: use data_path to replace project_yml_path
-    with open(os.path.join(project_yml_path, data_yaml_file), 'r') as yml_stream:
+    with open(os.path.join(data_path, data_yaml_file), 'r') as yml_stream:
         data_dict = yaml.load(yml_stream)
 
     print 'loading bosch data from ', data_path

@@ -105,7 +105,7 @@ class CombinedModel(BaseModel):
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
-            yaml.dump(models_dict, yml_stream)
+            yaml.dump(models_dict, yml_stream, default_flow_style=False)
 
 
 
