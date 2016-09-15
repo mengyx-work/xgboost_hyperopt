@@ -31,7 +31,7 @@ class CombinedModel(BaseModel):
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
         ## check the expected params for combined model
-        expected_keys = ['raw_models_yaml_file', 'project_path', 'models_yaml_file']
+        expected_keys = ['raw_models_yaml_path', 'raw_models_yaml_file', 'project_path', 'models_yaml_file']
         for key in expected_keys:
             if key not in model_params:
                 sys.exit('the expected key {} does not exist in params'.format(key))
