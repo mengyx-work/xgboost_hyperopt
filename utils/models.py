@@ -166,9 +166,6 @@ class CombinedModel(BaseModel):
         result[-thres_index:] = 1
         ## align the results with input test data using index
         result = result.ix[pred_data_index]
-        result.rename('Response')
-        result.index.rename('Id', inplace=True)
-        #result.to_csv('tmp_results.csv')
         return result
         #'''
         
