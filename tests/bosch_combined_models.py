@@ -6,11 +6,12 @@ import cPickle as pickle
 
 sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
 from utils.bosch_functions import load_processed_bosch_data
+from utils.utils_functions import print_colors
 from utils.models import CombinedModel
 from utils.validation_tools import score_MCC, MCC, create_validation_index, cross_validate_model
 
 dep_var_name = 'Response'
-tot_bins = range(15) + ['NaN']
+tot_bins = [str(x) for x in range(15)] + ['NaN']
 
 ## 15 bins data
 project_yml_path = '/mnt/home/ymm/kaggle/compete/current'
@@ -33,7 +34,7 @@ for bin_index in tot_bins:
     on the similar set of test data
     '''
 
-    print 'start training and prediction on dat bin: {}'.format(bin_index)
+    print '{} \n start training and prediction on data bin: {}'.format(print_colors.GREEN, bin_index)
     start_time = time.time()
 
     train, test  = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index = bin_index, load_test=True)
@@ -62,7 +63,7 @@ for bin_index in tot_bins:
     pred_df = combined_model.predict(test)
     res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
     pred_df.to_csv(res_file_name)
-    print 'finish training and prediction on data bin: {}, using {} seconds'.format(bin_index, round(time.time() - start_time, 0))
+    print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, bin_index, round(time.time() - start_time, 0))
     ## validation, print out the MCC results
     #print MCC(valid_data[dep_var_name], pred_df)
 
