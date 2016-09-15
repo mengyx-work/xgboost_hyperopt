@@ -5,7 +5,7 @@ import sys
 import os.path
 from random import shuffle
 from sklearn import metrics
-from sk:qearn import datasets
+from sklearn import datasets
 
 class print_colors:
     '''
