@@ -38,13 +38,13 @@ list_param_dict['random_state'] = range(0, 3)
 auto_fill_model_dicts(models, const_params, list_param_dict, 'ExtraTree')
 '''
 
-'''
+#'''
 model_dict = {}
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 15
+params["num_round"]                = 20
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
@@ -58,7 +58,7 @@ params["val"]                      = False
 model_dict['model_type'] = 'Xgboost'
 model_dict['model_params'] = params
 models[model_index] = model_dict
-'''
+#'''
 
 #'''
 ## ExtraTree Model
