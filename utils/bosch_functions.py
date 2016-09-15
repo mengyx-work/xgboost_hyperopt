@@ -23,10 +23,8 @@ id_column_name = 'Id'
 dep_var_name = 'Response'
 
 
-#def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0', load_test=False):
 def load_processed_bosch_data(data_path, data_yaml_file, data_index='0', load_test=False):
 
-    ## TODO: use data_path to replace project_yml_path
     with open(os.path.join(data_path, data_yaml_file), 'r') as yml_stream:
         data_dict = yaml.load(yml_stream)
 
@@ -40,6 +38,7 @@ def load_processed_bosch_data(data_path, data_yaml_file, data_index='0', load_te
       return train, test
     else:
       return train
+
 
 
 def create_grouped_index_df(bin_num):
@@ -268,6 +267,7 @@ def process_train_date_date(train_date):
    
 
 
+'''
 ## assuming the model output is the probability of being default,
 ## then this probability can be used for ranking. Then using the fraction of
 ## default in validation data to assign the proper threshold to the prediction
@@ -286,4 +286,4 @@ def score_MCC(ground_truth, scores):
     #print ground_truth
     #print binary_scores
     return matthews_corrcoef(tmp_ground_truth, binary_scores)
- 
+''' 
