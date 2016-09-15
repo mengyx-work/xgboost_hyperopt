@@ -23,14 +23,22 @@ id_column_name = 'Id'
 dep_var_name = 'Response'
 
 
-def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0'):
+def load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index='0', load_test=False):
+
+    ## TODO: use data_path to replace project_yml_path
     with open(os.path.join(project_yml_path, data_yaml_file), 'r') as yml_stream:
         data_dict = yaml.load(yml_stream)
 
-    data_file = os.path.join(data_path, data_dict[data_index]['train_file'])
-    print 'loading bosch data from ', data_file
-    train = pd.read_csv(data_file, index_col='Id')
-    return train
+    print 'loading bosch data from ', data_path
+    train_file = os.path.join(data_path, data_dict[data_index]['train_file'])
+    train = pd.read_csv(train_file, index_col='Id')
+
+    if load_test:
+      test_file	  = os.path.join(data_path, data_dict[data_index]['test_file'])
+      test	  = pd.read_csv(test_file, index_col='Id')
+      return train, test
+    else:
+      return train
 
 
 def create_grouped_index_df(bin_num):
