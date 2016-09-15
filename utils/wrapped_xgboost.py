@@ -22,7 +22,7 @@ class xgboost_classifier(object):
     3. cross_validate_fit uses fit and predict functions, so it doesn't remove dep_var column
     '''
 
-    def __init__(self, train = None, label_name = None, params = None, use_weights = False, model_file = './current_xgboost_model'):
+    def __init__(self, train = None, label_name = None, params = None, use_weights = False, use_scale_pos_weight = False,  model_file = './current_xgboost_model'):
 
         self.params = {}
 
@@ -42,8 +42,9 @@ class xgboost_classifier(object):
         #self.params['nthread']                  = 2 * multiprocessing.cpu_count()
         #self.params['nthread']                  = 8
 
-        self.model_file_name = model_file
-        self.use_weights     = use_weights
+        self.model_file_name        = model_file
+        self.use_weights            = use_weights
+        self.use_scale_pos_weight   = use_scale_pos_weight
 
         if params is not None:
             ## try to load use_weights from params
@@ -158,7 +159,7 @@ class xgboost_classifier(object):
         os.remove(fea_map_file)
 
 
-    def fit(self, train = None, label_name = None, use_weights = False, params = None, val = None):
+    def fit(self, train = None, label_name = None, use_weights = False, use_scale_pos_weight = False, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
         Design principle
@@ -173,6 +174,12 @@ class xgboost_classifier(object):
 
         ## combine the initial param with current use_weights
         use_weights = any([use_weights, self.use_weights])
+        use_scale_pos_weight = any([self.use_scale_pos_weight, use_scale_pos_weight])
+
+        if use_scale_pos_weight:
+            scale_pos_weight = 1. * np.sum(train[self.label_name] == 0) / np.sum(train[self.label_name] == 1)
+            self.fit_params['scale_pos_weight'] = scale_pos_weight
+
         
         if use_weights:
             weights = self._create_weight_by_label(train[self.label_name])
@@ -295,7 +302,7 @@ class xgboost_classifier(object):
             dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
         else:
             warnings.warn('in the xgboost prediction, test data does not contain label column ' + self.label_name)
-            dtest = xgb.DMatrix(np.array(test_data), missing = np.NaN)
+            dtest = xgb.DMatrix(np.array(test), missing = np.NaN)
 
         if hasattr(self, 'best_iters') and self.best_iters is not None:
             y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
