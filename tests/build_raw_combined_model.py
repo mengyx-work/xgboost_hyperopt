@@ -5,7 +5,8 @@ models_yaml_file = 'raw_combined_models.yml'
 #project_path = '/Users/ymm/Google_Drive/Kaggle/compete/current/combined_model'
 #project_path = '/home/ymm/kaggle/compete/current'
 #project_path = '/mnt/home/ymm/kaggle/compete/current/combined_model'
-project_path = '/mnt/home/ymm/kaggle/compete/current/tmp'
+#project_path = '/mnt/home/ymm/kaggle/compete/current/tmp'
+project_path = './'
 
 if not os.path.exists(project_path):
     os.makedirs(project_path)
