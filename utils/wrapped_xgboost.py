@@ -286,16 +286,16 @@ class xgboost_classifier(object):
         if test is None:
             raise ValueError('test data is not defined.')
 
-        if self.label_name not in test.columns:
-            warnings.warn('in the xgboost prediction, test data does not contain label column {}'.format(self.label_name))
-            ## test data may not contain the label_name column
+        ## test data may not contain the label_name column
+        if self.label_name in test.columns:
             #raise ValueError('\n Error: ' + self.label_name + ' is missing in test_data')
             #sys.exit(0)
-
-        test_labels = test[self.label_name]
-        test_data = test.drop(self.label_name, axis=1)
-
-        dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
+            test_labels = test[self.label_name]
+            test_data = test.drop(self.label_name, axis=1)
+            dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
+        else:
+            warnings.warn('in the xgboost prediction, test data does not contain label column ' + self.label_name)
+            dtest = xgb.DMatrix(np.array(test_data), missing = np.NaN)
 
         if hasattr(self, 'best_iters') and self.best_iters is not None:
             y_prob = self.bst.predict(dtest, ntree_limit = self.best_iters)
