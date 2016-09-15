@@ -62,8 +62,6 @@ for bin_index in tot_bins:
 
     combined_model.fit(train, dep_var_name)
     pred_df = combined_model.predict(test)
-    pred_df.rename('Response')
-    pred_df.index.rename('Id', inplace=True)
     res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
     pred_df.to_csv(res_file_name)
     print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, bin_index, round(time.time() - start_time, 0))
