@@ -160,11 +160,15 @@ class CombinedModel(BaseModel):
         result.index = pred_data_index
         result.sort_values(inplace = True)
         print 'prediction using the mean faulted rate:', mean_faulted_rate
+
         thres_index = int(mean_faulted_rate * len(pred_data_index))
         result[:-thres_index] = 0
         result[-thres_index:] = 1
+        ## align the results with input test data using index
         result = result.ix[pred_data_index]
-        result.to_csv('tmp_results.csv')
+        result.rename('Response')
+        result.index.rename('Id', inplace=True)
+        #result.to_csv('tmp_results.csv')
         return result
         #'''
         
