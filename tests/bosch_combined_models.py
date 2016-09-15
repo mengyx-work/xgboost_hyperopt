@@ -15,7 +15,7 @@ tot_bins = [str(x) for x in range(15)] + ['NaN']
 
 ## 15 bins data
 project_yml_path = '/mnt/home/ymm/kaggle/compete/current'
-data_path = '/mnt/home/ymm/kaggle/bosch_data/bosch_complete_processed_data'
+data_path = '/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data'
 data_yaml_file = 'bosch_processed_data_dict.yml'
 
 '''
@@ -37,7 +37,8 @@ for bin_index in tot_bins:
     print '{} \n start training and prediction on data bin: {}'.format(print_colors.GREEN, bin_index)
     start_time = time.time()
 
-    train, test  = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index = bin_index, load_test=True)
+    #train, test  = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index = bin_index, load_test=True)
+    train, test  = load_processed_bosch_data(data_path, data_yaml_file, data_index = bin_index, load_test=True)
 
     ## params for combined model
     raw_models_yaml_file    = 'raw_combined_models.yml'
@@ -61,6 +62,8 @@ for bin_index in tot_bins:
 
     combined_model.fit(train, dep_var_name)
     pred_df = combined_model.predict(test)
+    pred_df.rename('Response')
+    pred_df.index.rename('Id', inplace=True)
     res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
     pred_df.to_csv(res_file_name)
     print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, bin_index, round(time.time() - start_time, 0))
