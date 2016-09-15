@@ -32,14 +32,17 @@ for bin_index in tot_bins:
     a unique set of data, prediction will be conducted 
     on the similar set of test data
     '''
-    print 'start training and prediction on dat bin: ', bin_index
+
+    print 'start training and prediction on dat bin: {}'.format(bin_index)
+    start_time = time.time()
+
     train, test  = load_processed_bosch_data(data_path, project_yml_path, data_yaml_file, data_index = bin_index, load_test=True)
 
     ## params for combined model
-    raw_models_yaml_file = 'raw_combined_models.yml'
-    raw_models_yaml_path = './'
+    raw_models_yaml_file    = 'raw_combined_models.yml'
+    raw_models_yaml_path    = './'
     trained_model_yaml_file = 'trained_combined_model.yml'
-    project_path = '/mnt/home/ymm/kaggle/compete/current/data_bin_{}_models'.format(bin_index)
+    project_path            = '/mnt/home/ymm/kaggle/compete/current/data_bin_{}_models'.format(bin_index)
 
     ## train the comined model
     combined_model_params = {}
@@ -59,6 +62,7 @@ for bin_index in tot_bins:
     pred_df = combined_model.predict(test)
     res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
     pred_df.to_csv(res_file_name)
+    print 'finish training and prediction on data bin: {}, using {} seconds'.format(bin_index, round(time.time() - start_time, 0))
     ## validation, print out the MCC results
     #print MCC(valid_data[dep_var_name], pred_df)
 
