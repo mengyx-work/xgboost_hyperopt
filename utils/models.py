@@ -187,7 +187,7 @@ class CombinedModel(BaseModel):
 
 
 
-    def fit(self, train, dep_var_name):
+    def fit(self, train, dep_var_name, append_models=False):
 
         ## store the dep_var_nme on the combined model.
         ## because the Xgboost model can not be directly
