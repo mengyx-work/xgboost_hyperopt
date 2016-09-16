@@ -69,10 +69,6 @@ def list_const_params(params):
 
 
 
-data_path ='/home/ymm/kaggle/bosch/data_15_bins_combined_models'
-submission_sample_file = 'sample_submission.csv'
-submission_sample_path = '/mnt/home/ymm/bosch'
-
 def combine_prediction_results_for_combined_models(data_path, submission_sample_path, submission_sample_file, index_col_name, res_col_name):
     csv_files = [f for f in os.listdir(data_path) if isfile(join(data_path, f)) and 'results' in f]
     print 'the collected result csv files:', csv_files
