@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os, sys, time
 import yaml
+from random import shuffle
 import cPickle as pickle
 
 sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
@@ -35,23 +36,39 @@ for bin_index in tot_bins:
     ## big loop on the subsets of data
     labels = train[dep_var_name]
 
+    slice_num = 10
 
-    ## params for combined model
-    raw_models_yaml_file    = 'raw_combined_models.yml'
-    raw_models_yaml_path    = './'
-    trained_model_yaml_file = 'trained_combined_model.yml'
-    project_path            = './data_bin_{}_models'.format(bin_index)
+    negative_index = train.index[labels == 0].tolist()
+    positive_index = train.index[labels == 1].tolist()
 
-    ## train the comined model
-    combined_model_params = {}
-    combined_model_params['raw_models_yaml_file']   = raw_models_yaml_file
-    combined_model_params['project_path']           = project_path
-    combined_model_params['models_yaml_file']       = trained_model_yaml_file
-    combined_model_params['raw_models_yaml_path']   = raw_models_yaml_path 
+    shuffle(negative_index)
+    index_list = [int(1.*i/slice_num*len(negative_index)) for i in range(slice_num)]
+    index_list.append(len(negative_index))
 
-    ## build the combined model
-    combined_model = CombinedModel(combined_model_params)
-    combined_model.fit(train, dep_var_name)
+    for i in range(slice_num):
+        data_index = positive_index[:]
+    	tmp_negative_index = negative_index[index_list[i]:index_list[i+1]]
+    	data_index.extend(tmp_negative_index)
+
+        ## params for combined model
+        raw_models_yaml_file    = 'raw_combined_models.yml'
+        raw_models_yaml_path    = './'
+        trained_model_yaml_file = 'trained_combined_model.yml'
+        project_path            = './data_subset_{}/data_bin_{}_models'.format(i, bin_index)
+
+        ## train the comined model
+        combined_model_params = {}
+        combined_model_params['raw_models_yaml_file']   = raw_models_yaml_file
+        combined_model_params['project_path']           = project_path
+        combined_model_params['models_yaml_file']       = trained_model_yaml_file
+        combined_model_params['raw_models_yaml_path']   = raw_models_yaml_path 
+
+        ## build the combined model
+        combined_model = CombinedModel(combined_model_params)
+        tmp_train = train.ix[data_index]
+        combined_model.fit(train, dep_var_name)
+
+
     pred_df = combined_model.predict(test)
 
     ## final output from combined model
