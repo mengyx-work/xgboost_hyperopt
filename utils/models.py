@@ -102,6 +102,7 @@ class CombinedModel(BaseModel):
 
 
 
+
     ## static method is called within a class method
     @classmethod
     def mcc_eval_func(cls, ground_truth, scores):
@@ -188,7 +189,6 @@ class CombinedModel(BaseModel):
 
 
 
-
     def fit(self, train, dep_var_name):
 
         ## store the dep_var_nme on the combined model.
@@ -235,6 +235,21 @@ class CombinedModel(BaseModel):
 
 
 
+    @staticmethod
+    def convert_scores2binary(scores, thres, is_thres_pos=True):
+        if not isinstance(scores, pd.Series):
+            scores = pd.Series(scores)
+        tmp_scores = scores.copy()
+        tmp_scores[scores < thres] = 0
+        tmp_scores[scores > thres] = 1
+        if is_thres_pos:
+            tmp_scores[scores == thres] = 1
+        else:
+            tmp_scores[scores == thres] = 0
+        tmp_scores = tmp_scores.astype(int)
+        return tmp_scores
+
+
     def predict(self, data):
         '''
         Prediction results from each model is one column of returned DataFrame
@@ -253,23 +268,32 @@ class CombinedModel(BaseModel):
             if model_dict['model_type'] != 'Xgboost':
                 model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
             else:
-                model = xgboost_classifier(label_name = self.dep_var_name)
+               #model = xgboost_classifier(label_name = self.dep_var_name)
+                model = xgboost_classifier()
                 model.load_model_from_file(os.path.join(self.model_params['project_path'], model_pickle_file))
                 
-
             ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
 
             ## traditional way to collect data from each model
             #pred_df[column_name] = model.predict(data)
 
+            ## the expected format of scores is pd.Series
+            scores = model.predict(data)
+            model_thres = model_dict['model_threshold']
+            pred_df[column_name] = self.convert_scores2binary(scores, model_thres, is_thres_pos = False)
+
+        mean_preds = pred_df.mean(axis=1)
+        mean_result = self.convert_scores2binary(mean_preds, 0.5, is_thres_pos = False)
+        return mean_result
+
+        '''
             ## Bosch
             ## convert scores into rank
             mean_faulted_rate = model_dict['fault_rate']
             scores = model.predict(data)
             pred_df[column_name] = pd.Series(scores).rank()
 
-        #'''
         ## Bosch way to aggregate the predictions from different models
         result = pred_df.sum(axis=1)
         pred_data_index =data.index
@@ -283,9 +307,8 @@ class CombinedModel(BaseModel):
         ## align the results with input test data using index
         result = result.ix[pred_data_index]
         return result
-        #'''
+        '''
         
-
         '''
         pred_df.index = data.index
         pred_df['label'] = data[self.dep_var_name]
