@@ -199,14 +199,24 @@ class CombinedModel(BaseModel):
             models_dict = yaml.load(yml_stream)
 
         if not os.path.exists(self.model_params['project_path']):
+            if append_models:
+                raise ValueError('the project_path does not exists in append_models...')
             os.makedirs(self.model_params['project_path'])
         else:
-            print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
+            if not append_models:
+                print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
 
         ## param prepared for Kaggle Bosch
         mean_faulted_rate = np.mean(train[self.dep_var_name])
 
+        if append_models:
+            with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
+                curr_models_dict = yaml.load(yml_stream)
+            curr_max_model_index = max([int(i) for i in curr_models_dict.keys()]) + 1
+
         for index, model_dict in models_dict.items():
+            if append_models:
+                index = index + curr_max_model_index
 
             if model_dict['model_type'] != 'Xgboost':
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
@@ -226,10 +236,15 @@ class CombinedModel(BaseModel):
             ## Kaggle Bosch
             ## the same date share this param across different models
             model_dict['fault_rate'] = mean_faulted_rate
+            if append_models:
+                curr_models_dict[index] = model_dict
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
-            yaml.dump(models_dict, yml_stream, default_flow_style=False)
+            if append_models:
+                yaml.dump(curr_models_dict, yml_stream, default_flow_style=False)
+            else:
+                yaml.dump(models_dict, yml_stream, default_flow_style=False)
 
 
 
