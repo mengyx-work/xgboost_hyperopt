@@ -40,7 +40,6 @@ combined_model_params['models_yaml_file']       = trained_model_yaml_file
 ## build the combined model
 combined_model = CombinedModel(combined_model_params)
 
-
 ##'''
 ############## Section of regular validation #######################
 train_index, valid_index = create_validation_index(train, 0.5, dep_var_name, True)  
