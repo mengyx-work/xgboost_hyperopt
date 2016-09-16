@@ -59,7 +59,156 @@ class CombinedModel(BaseModel):
 
         return model
 
-               
+
+def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num=2):
+    '''
+    function to
+    1. create tratified KFold
+    2. cross validate the given classifier for each fold
+    3. use the given eval_func
+    4. the classifier requires fit and predict two functions
+
+    noted that the StratifiedKFold function gives the location index,
+    not the DataFrame index
+    '''
+
+    results = []
+    train_label = train_df[dep_var_name]
+    skf = StratifiedKFold(train_label, fold_num, shuffle=True)
+
+    for train, test in skf:
+        kfold_train = train_df.iloc[train, :]
+        kfold_test = train_df.iloc[test, :]
+        kfold_test_label = train_label.iloc[test]
+        classifier.fit(kfold_train, dep_var_name)
+        scores = classifier.predict(kfold_test)
+        result = eval_func(kfold_test_label, scores)
+        results.append(result)
+
+    return results
+
+
+    @classmethod
+    def mcc(self, tp, tn, fp, fn):
+        sup = tp * tn - fp * fn
+        inf = (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
+        if inf==0:
+            return 0
+        else:
+            return sup / np.sqrt(inf)
+
+    @classmethod
+    def eval_mcc(self, y_true, y_prob):
+        idx = np.argsort(y_prob)
+        y_true_sort = y_true[idx]
+        n = y_true.shape[0]
+        nump = 1.0 * np.sum(y_true) # number of positive
+        numn = n - nump # number of negative
+        tp = nump
+        tn = 0.0
+        fp = numn
+        fn = 0.0
+        best_mcc = 0.0
+        mccs = np.zeros(n)
+        for i in range(n):
+            # all items with idx <= i are predicted negative while others are predicted positive
+            if y_true_sort[i] == 1:
+                tp -= 1.0
+                fn += 1.0
+            else:
+                fp -= 1.0
+                tn += 1.0
+            new_mcc = self.mcc(tp, tn, fp, fn)
+            mccs[i] = new_mcc
+            if new_mcc >= best_mcc:
+                best_mcc = new_mcc
+                best_thres = y_true_sort[i]
+
+        return best_mcc, best_thres
+
+
+
+    @classmethod
+    def mcc_eval_func(self, ground_truth, scores):
+        if isinstance(scores, pd.Series):
+            scores = scores.values
+        if isinstance(ground_truth, pd.Series):
+            ground_truth = ground_truth.values
+        tmp_ground_truth = np.copy(ground_truth)
+        tmp_scores = np.copy(scores)
+        best_mcc, best_thres = self.eval_mcc(tmp_ground_truth, tmp_scores)
+
+
+
+
+    @classmethod
+    def get_cross_validate_thresholds(self, train_df, dep_var_name, classifier, model_dict, curr_max_model_index, fold_num=3):
+        results, thresholds = [], []
+        ## part of the models_dict
+        summary_dict = {}
+        train_label = train_df[dep_var_name]
+        skf = StratifiedKFold(train_label, fold_num, shuffle=True)
+
+        for train, test in skf:
+            kfold_train = train_df.iloc[train, :]
+            kfold_test = train_df.iloc[test, :]
+            kfold_test_label = train_label.iloc[test]
+            classifier.fit(kfold_train, dep_var_name)
+            scores = classifier.predict(kfold_test)
+            result, threshold = self.mcc_eval_func(kfold_test_label, scores)
+            results.append(result)
+            thresholds.append(threshold)
+
+        return results, thresholds
+
+
+
+    def cross_vlidate_fit(self, train, dep_var_name):
+        
+        self.dep_var_name = dep_var_name
+
+        with open(os.path.join(self.model_params['raw_models_yaml_path'], self.model_params['raw_models_yaml_file']), 'r') as yml_stream:
+            models_dict = yaml.load(yml_stream)
+
+        if not os.path.exists(self.model_params['project_path']):
+            os.makedirs(self.model_params['project_path'])
+        else:
+            print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
+
+
+        for index, model_dict in models_dict.items():
+
+            if model_dict['model_type'] != 'Xgboost':
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
+                model_dict['model_file'] = model_pickle_file
+                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
+                ## no copy of train, specific model will spawn a copy of training data
+                model.fit(train, self.dep_var_name) 
+                pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
+            else:
+                ## for xgboost model, a binary booster is saved insteead of the class object
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model'.format(index, model_dict['model_type'])
+                model_dict['model_file'] = model_pickle_file
+                model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(self.model_params['project_path'], model_pickle_file)
+                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
+                model.fit(train, self.dep_var_name) 
+
+            ## Kaggle Bosch
+            ## the same date share this param across different models
+            model_dict['fault_rate'] = mean_faulted_rate
+            print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
+
+        with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
+            yaml.dump(models_dict, yml_stream, default_flow_style=False)
+
+
+
+
+
+
+
+
+
     def fit(self, train, dep_var_name):
 
         ## store the dep_var_nme on the combined model.
