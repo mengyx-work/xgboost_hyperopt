@@ -147,7 +147,6 @@ class CombinedModel(BaseModel):
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
                 model.fit(kfold_train, dep_var_name) 
  
-
             scores = model.predict(kfold_test)
             result, threshold = cls.mcc_eval_func(kfold_test_label, scores)
             tmp_model_dict['model_threshold']   = threshold
@@ -174,7 +173,6 @@ class CombinedModel(BaseModel):
 
         summary_dict = {}
         curr_max_model_index = -1
-        #curr_max_model_index = max([int(i) for i in models_dict.index()])
         for index, model_dict in models_dict.items():
             results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, 2)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
@@ -262,13 +260,12 @@ class CombinedModel(BaseModel):
         pred_df = pd.DataFrame()
        
         for index, model_dict in models_dict.items():
-            ## load the pickle file name
             model_pickle_file = model_dict['model_file']
 
             if model_dict['model_type'] != 'Xgboost':
                 model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
             else:
-               #model = xgboost_classifier(label_name = self.dep_var_name)
+                ## initiate the model without specifying the dep_var_name
                 model = xgboost_classifier()
                 model.load_model_from_file(os.path.join(self.model_params['project_path'], model_pickle_file))
                 
@@ -310,9 +307,9 @@ class CombinedModel(BaseModel):
         '''
         
         '''
+        ## aggregate on each row and return the sum
         pred_df.index = data.index
         pred_df['label'] = data[self.dep_var_name]
-        pred_df.to_csv('tmp_pred_df.csv')
         result = pred_df.sum(axis=1)
         result.index = data.index
         return result
