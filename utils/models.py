@@ -40,7 +40,7 @@ class CombinedModel(BaseModel):
 
     
     @staticmethod
-    def _initiate_model_by_typ(emodel_type, model_params):
+    def _initiate_model_by_type(model_type, model_params):
         '''
         helper function to initiate the 
         proper model based on the 'model_type'
@@ -96,9 +96,9 @@ class CombinedModel(BaseModel):
             mccs[i] = new_mcc
             if new_mcc >= best_mcc:
                 best_mcc = new_mcc
-                best_thres = y_true_sort[i]
+                best_thres = y_prob[idx[i]]
 
-        return best_mcc, best_thres
+        return float(best_mcc), float(best_thres)
 
 
 
@@ -112,7 +112,7 @@ class CombinedModel(BaseModel):
         tmp_ground_truth = np.copy(ground_truth)
         tmp_scores = np.copy(scores)
         best_mcc, best_thres = cls.eval_mcc(tmp_ground_truth, tmp_scores)
-
+        return best_mcc, best_thres
 
 
 
@@ -124,15 +124,15 @@ class CombinedModel(BaseModel):
         train_label = train_df[dep_var_name]
         skf = StratifiedKFold(train_label, fold_num, shuffle=True)
 
-        cv_num = 0
         for train, test in skf:
             kfold_train = train_df.iloc[train, :]
             kfold_test = train_df.iloc[test, :]
             kfold_test_label = train_label.iloc[test]
             ## one model_dict for each trained model
-            tmp_model_dict = mode_dict.copy()
+            tmp_model_dict = model_dict.copy()
+            curr_max_model_index += 1
             if tmp_model_dict['model_type'] != 'Xgboost':
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}.pkl'.format(index, tmp_model_dict['model_type'], cv_num)
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds_eval.pkl'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
                 ## no copy of train, specific model will spawn a copy of training data
@@ -140,20 +140,17 @@ class CombinedModel(BaseModel):
                 pickle.dump(model, open(os.path.join(project_path, model_pickle_file), 'wb'), -1)
             else:
                 ## for xgboost model, a binary booster is saved insteead of the class object
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}'.format(index, tmp_model_dict['model_type'], cv_num)
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds_eval'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
                 tmp_model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(project_path, model_pickle_file)
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
-                model.fit(train, dep_var_name) 
+                model.fit(kfold_train, dep_var_name) 
  
 
-            #classifier.fit(kfold_train, dep_var_name)
             scores = model.predict(kfold_test)
-            result, threshold = self.mcc_eval_func(kfold_test_label, scores)
+            result, threshold = cls.mcc_eval_func(kfold_test_label, scores)
             tmp_model_dict['model_threshold']   = threshold
             tmp_model_dict['result']            = result
-            cv_num += 1
-            curr_max_model_index += 1
             summary_dict[str(curr_max_model_index)] = tmp_model_dict
             results.append(result)
             thresholds.append(threshold)
@@ -178,18 +175,14 @@ class CombinedModel(BaseModel):
         curr_max_model_index = -1
         #curr_max_model_index = max([int(i) for i in models_dict.index()])
         for index, model_dict in models_dict.items():
-            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, 3)
+            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, 2)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
             summary_dict.update(tmp_summary_dict)
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
-            #yaml.dump(models_dict, yml_stream, default_flow_style=False)
             yaml.dump(summary_dict, yml_stream, default_flow_style=False)
-
-
-
 
 
 
