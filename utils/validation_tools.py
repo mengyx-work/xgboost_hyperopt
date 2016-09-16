@@ -113,15 +113,12 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
     
     results = []
     train_label = train_df[dep_var_name]
-    #train_df.drop(dep_var_name, axis=1, inplace=True)
     skf = StratifiedKFold(train_label, fold_num, shuffle=True)
 
     for train, test in skf:
         kfold_train = train_df.iloc[train, :]
-        #kfold_train_label = train_label.iloc[train]
         kfold_test = train_df.iloc[test, :]
         kfold_test_label = train_label.iloc[test]
-        #classifier.fit(kfold_train, kfold_train_label)
         classifier.fit(kfold_train, dep_var_name)
         scores = classifier.predict(kfold_test)
         result = eval_func(kfold_test_label, scores)
