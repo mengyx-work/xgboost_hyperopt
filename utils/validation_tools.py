@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os, sys, time
+from os.path import isfile, join
 from random import shuffle
 from sklearn.metrics import matthews_corrcoef
 from sklearn.cross_validation import StratifiedKFold
@@ -66,6 +67,31 @@ def list_const_params(params):
         listed_params[key] = [value]
     return listed_params
 
+
+
+data_path ='/home/ymm/kaggle/bosch/data_15_bins_combined_models'
+submission_sample_file = 'sample_submission.csv'
+submission_sample_path = '/mnt/home/ymm/bosch'
+
+def combine_prediction_results_for_combined_models(data_path, submission_sample_path, submission_sample_file, index_col_name, res_col_name):
+    csv_files = [f for f in os.listdir(data_path) if isfile(join(data_path, f)) and 'results' in f]
+    print 'the collected result csv files:', csv_files
+    submission_sample = pd.read_csv(join(submission_sample_path, submission_sample_file), index_col=index_col_name)
+    results = pd.DataFrame()
+    for csv_file in csv_files:
+        ## expect the results contain index column and without header
+        res = pd.read_csv(join(data_path, csv_file), index_col=0, header=None)
+        results = pd.concat([results, res])
+    results.index.name = index_col_name
+    results.columns = [res_col_name]
+    ## binary result, convert double into int
+    results = results.astype('int')
+    if result.shape[0] != submission_sample.shape[0]:
+        sys.exit('the submission data dimension does not match sample, abort...')
+
+    sorted_results = results.ix[submission_sample.index]
+    combined_results_file = 'bosch_combined_results.csv'
+    sorted_results.to_csv(join(data_path, combined_results_file))
 
 
 def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num=2):
