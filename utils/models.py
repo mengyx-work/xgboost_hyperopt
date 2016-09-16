@@ -142,24 +142,48 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
 
 
     @classmethod
-    def get_cross_validate_thresholds(self, train_df, dep_var_name, classifier, model_dict, curr_max_model_index, fold_num=3):
+    def build_cross_validate_models(self, train_df, dep_var_name, model_dict, curr_max_model_index, fold_num=3):
         results, thresholds = [], []
         ## part of the models_dict
         summary_dict = {}
         train_label = train_df[dep_var_name]
         skf = StratifiedKFold(train_label, fold_num, shuffle=True)
 
+        cv_num = 0
         for train, test in skf:
             kfold_train = train_df.iloc[train, :]
             kfold_test = train_df.iloc[test, :]
             kfold_test_label = train_label.iloc[test]
-            classifier.fit(kfold_train, dep_var_name)
-            scores = classifier.predict(kfold_test)
+            ## one model_dict for each trained model
+            tmp_model_dict = mode_dict.copy()
+            if tmp_model_dict['model_type'] != 'Xgboost':
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}.pkl'.format(index, tmp_model_dict['model_type'], cv_num)
+                tmp_model_dict['model_file'] = model_pickle_file
+                model = self._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
+                ## no copy of train, specific model will spawn a copy of training data
+                model.fit(train, self.dep_var_name) 
+                pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
+            else:
+                ## for xgboost model, a binary booster is saved insteead of the class object
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}'.format(index, tmp_model_dict['model_type'], cv_num)
+                tmp_model_dict['model_file'] = model_pickle_file
+                tmp_model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(self.model_params['project_path'], model_pickle_file)
+                model = self._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
+                model.fit(train, self.dep_var_name) 
+ 
+
+            #classifier.fit(kfold_train, dep_var_name)
+            scores = model.predict(kfold_test)
             result, threshold = self.mcc_eval_func(kfold_test_label, scores)
+            tmp_model_dict['model_threshold']   = threshold
+            tmp_model_dict['result']            = result
+            cv_num += 1
+            curr_max_model_index += 1
+            summary_dict[str(curr_max_model_index)] = tmp_model_dict
             results.append(result)
             thresholds.append(threshold)
 
-        return results, thresholds
+        return results, thresholds, summary_dict
 
 
 
@@ -175,31 +199,19 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
         else:
             print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
 
-
+        summary_dict = {}
+        curr_max_model_index = -1
+        #curr_max_model_index = max([int(i) for i in models_dict.index()])
         for index, model_dict in models_dict.items():
-
-            if model_dict['model_type'] != 'Xgboost':
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model.pkl'.format(index, model_dict['model_type'])
-                model_dict['model_file'] = model_pickle_file
-                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
-                ## no copy of train, specific model will spawn a copy of training data
-                model.fit(train, self.dep_var_name) 
-                pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
-            else:
-                ## for xgboost model, a binary booster is saved insteead of the class object
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model'.format(index, model_dict['model_type'])
-                model_dict['model_file'] = model_pickle_file
-                model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(self.model_params['project_path'], model_pickle_file)
-                model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
-                model.fit(train, self.dep_var_name) 
-
-            ## Kaggle Bosch
-            ## the same date share this param across different models
-            model_dict['fault_rate'] = mean_faulted_rate
+            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, curr_max_model_index, 3)
+            curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
+            summary_dict.update(tmp_summary_dict)
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
+
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
-            yaml.dump(models_dict, yml_stream, default_flow_style=False)
+            #yaml.dump(models_dict, yml_stream, default_flow_style=False)
+            yaml.dump(summary_dict, yml_stream, default_flow_style=False)
 
 
 
