@@ -39,8 +39,8 @@ class CombinedModel(BaseModel):
         self.model_params = model_params
 
     
-    @classmethod
-    def _initiate_model_by_type(self, model_type, model_params):
+    @staticmethod
+    def _initiate_model_by_typ(emodel_type, model_params):
         '''
         helper function to initiate the 
         proper model based on the 'model_type'
@@ -52,7 +52,8 @@ class CombinedModel(BaseModel):
             model = RandomForestModel(model_params)
 
         if model_type == 'Xgboost':
-            ## directly use the xgboost_classifier
+            ## directly use the xgboost_classifier to initiate the model
+            ## pass the binary file name as a model param
             binary_file_name = model_params.pop(CombinedModel.xgb_binary_file_key, 'combined_model_xgboost_binary_file')
             use_weights      = model_params.pop('use_weights', False)
             model = xgboost_classifier(params = model_params, use_weights = use_weights, model_file = binary_file_name)
@@ -60,45 +61,18 @@ class CombinedModel(BaseModel):
         return model
 
 
-def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num=2):
-    '''
-    function to
-    1. create tratified KFold
-    2. cross validate the given classifier for each fold
-    3. use the given eval_func
-    4. the classifier requires fit and predict two functions
+    
+    @staticmethod
+    def eval_mcc(y_true, y_prob):
+        
+        def mcc(tp, tn, fp, fn):
+            sup = tp * tn - fp * fn
+            inf = (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
+            if inf==0:
+                return 0
+            else:
+                return sup / np.sqrt(inf)
 
-    noted that the StratifiedKFold function gives the location index,
-    not the DataFrame index
-    '''
-
-    results = []
-    train_label = train_df[dep_var_name]
-    skf = StratifiedKFold(train_label, fold_num, shuffle=True)
-
-    for train, test in skf:
-        kfold_train = train_df.iloc[train, :]
-        kfold_test = train_df.iloc[test, :]
-        kfold_test_label = train_label.iloc[test]
-        classifier.fit(kfold_train, dep_var_name)
-        scores = classifier.predict(kfold_test)
-        result = eval_func(kfold_test_label, scores)
-        results.append(result)
-
-    return results
-
-
-    @classmethod
-    def mcc(self, tp, tn, fp, fn):
-        sup = tp * tn - fp * fn
-        inf = (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)
-        if inf==0:
-            return 0
-        else:
-            return sup / np.sqrt(inf)
-
-    @classmethod
-    def eval_mcc(self, y_true, y_prob):
         idx = np.argsort(y_prob)
         y_true_sort = y_true[idx]
         n = y_true.shape[0]
@@ -118,7 +92,7 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
             else:
                 fp -= 1.0
                 tn += 1.0
-            new_mcc = self.mcc(tp, tn, fp, fn)
+            new_mcc = mcc(tp, tn, fp, fn)
             mccs[i] = new_mcc
             if new_mcc >= best_mcc:
                 best_mcc = new_mcc
@@ -128,21 +102,22 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
 
 
 
+    ## static method is called within a class method
     @classmethod
-    def mcc_eval_func(self, ground_truth, scores):
+    def mcc_eval_func(cls, ground_truth, scores):
         if isinstance(scores, pd.Series):
             scores = scores.values
         if isinstance(ground_truth, pd.Series):
             ground_truth = ground_truth.values
         tmp_ground_truth = np.copy(ground_truth)
         tmp_scores = np.copy(scores)
-        best_mcc, best_thres = self.eval_mcc(tmp_ground_truth, tmp_scores)
+        best_mcc, best_thres = cls.eval_mcc(tmp_ground_truth, tmp_scores)
 
 
 
 
     @classmethod
-    def build_cross_validate_models(self, train_df, dep_var_name, model_dict, curr_max_model_index, fold_num=3):
+    def build_cross_validate_models(cls, train_df, dep_var_name, model_dict, project_path, curr_max_model_index, fold_num=3):
         results, thresholds = [], []
         ## part of the models_dict
         summary_dict = {}
@@ -159,17 +134,17 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
             if tmp_model_dict['model_type'] != 'Xgboost':
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}.pkl'.format(index, tmp_model_dict['model_type'], cv_num)
                 tmp_model_dict['model_file'] = model_pickle_file
-                model = self._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
+                model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
                 ## no copy of train, specific model will spawn a copy of training data
-                model.fit(train, self.dep_var_name) 
-                pickle.dump(model, open(os.path.join(self.model_params['project_path'], model_pickle_file), 'wb'), -1)
+                model.fit(kfold_train, dep_var_name) 
+                pickle.dump(model, open(os.path.join(project_path, model_pickle_file), 'wb'), -1)
             else:
                 ## for xgboost model, a binary booster is saved insteead of the class object
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model_CV_{}'.format(index, tmp_model_dict['model_type'], cv_num)
                 tmp_model_dict['model_file'] = model_pickle_file
-                tmp_model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(self.model_params['project_path'], model_pickle_file)
-                model = self._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
-                model.fit(train, self.dep_var_name) 
+                tmp_model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(project_path, model_pickle_file)
+                model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
+                model.fit(train, dep_var_name) 
  
 
             #classifier.fit(kfold_train, dep_var_name)
@@ -203,7 +178,7 @@ def cross_validate_model(train_df, dep_var_name, classifier, eval_func, fold_num
         curr_max_model_index = -1
         #curr_max_model_index = max([int(i) for i in models_dict.index()])
         for index, model_dict in models_dict.items():
-            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, curr_max_model_index, 3)
+            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, 3)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
             summary_dict.update(tmp_summary_dict)
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
