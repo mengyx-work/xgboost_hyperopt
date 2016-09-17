@@ -40,6 +40,7 @@ rf_const_params['max_depth'] = 4
 list_param_dict = {}
 list_param_dict['random_state'] = range(0, 100, 20)
 auto_fill_model_dicts(models, rf_const_params, list_param_dict, 'RandomForest')
+'''
 
 
 
@@ -54,17 +55,17 @@ et_const_params['criterion'] = 'gini'
 list_param_dict = {}
 list_param_dict['random_state'] = range(0, 100, 4)
 auto_fill_model_dicts(models, et_const_params, list_param_dict, 'ExtraTree')
+#'''
+
 '''
-
-
-model_index = 0
 model_dict = {}
 model_dict['model_type'] = 'ExtraTree'
 model_dict['model_params'] = {'random_state' : 0, 'n_estimators' : 500, 'max_depth' : 4, 'criterion' : 'entropy', 'n_jobs' : -1}
 models[model_index] = model_dict
+'''
 
 
-#'''
+'''
 ##### example of single xgboost model ######
 model_index += 1
 model_dict = {}
@@ -86,7 +87,7 @@ params["val"]                      = False
 model_dict['model_type'] = 'Xgboost'
 model_dict['model_params'] = params
 models[model_index] = model_dict
-#'''
+'''
 
 '''
 params = {}
