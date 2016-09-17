@@ -233,9 +233,9 @@ class CombinedModel(BaseModel):
                 model = self._initiate_model_by_type(model_dict['model_type'], model_dict['model_params'])
                 model.fit(train, self.dep_var_name) 
 
-            ## Kaggle Bosch
             ## the same date share this param across different models
-            model_dict['fault_rate'] = mean_faulted_rate
+            model_dict['fault_rate'] = float(mean_faulted_rate)
+
             if append_models:
                 curr_models_dict[index] = model_dict
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
@@ -245,7 +245,6 @@ class CombinedModel(BaseModel):
                 yaml.dump(curr_models_dict, yml_stream, default_flow_style=False)
             else:
                 yaml.dump(models_dict, yml_stream, default_flow_style=False)
-#        yml_stream.close()
 
 
 
@@ -264,7 +263,8 @@ class CombinedModel(BaseModel):
         return tmp_scores
 
 
-    def predict(self, data):
+
+    def predict(self, data, score_conversion_type = 'A'):
         '''
         Prediction results from each model is one column of returned DataFrame
         If data contains the column with 'dep_var_name', this functions create 
@@ -287,49 +287,50 @@ class CombinedModel(BaseModel):
                 
             ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
+            scores = model.predict(data) 
 
-            ## traditional way to collect data from each model
-            #pred_df[column_name] = model.predict(data)
+            if score_conversion_type =='A':
+                ## scores conversion type A:
+                ## for each model, scores are directly converted
+                ## into binary results
+                model_thres = model_dict['model_threshold']
+                pred_df[column_name] = self.convert_scores2binary(scores, model_thres, is_thres_pos = False)
+            elif score_conversion_type == 'B':
+                ## scores conversion type B
+                ## for each model, scores are converted into rank
+                mean_faulted_rate = model_dict['fault_rate']
+                scores = model.predict(data)
+                pred_df[column_name] = pd.Series(scores).rank()
+            else:
+                ## generic Score conversion type C
+                ## traditional way to collect data from each model
+                pred_df[column_name] = model.predict(data)
 
-            ## the expected format of scores is pd.Series
-            scores = model.predict(data)
-            model_thres = model_dict['model_threshold']
-            pred_df[column_name] = self.convert_scores2binary(scores, model_thres, is_thres_pos = False)
-
-        mean_preds = pred_df.mean(axis=1)
-        mean_result = self.convert_scores2binary(mean_preds, 0.5, is_thres_pos = False)
-        return mean_result
-
-        '''
-            ## Bosch
-            ## convert scores into rank
-            mean_faulted_rate = model_dict['fault_rate']
-            scores = model.predict(data)
-            pred_df[column_name] = pd.Series(scores).rank()
-
-        ## Bosch way to aggregate the predictions from different models
-        result = pred_df.sum(axis=1)
-        pred_data_index =data.index
-        result.index = pred_data_index
-        result.sort_values(inplace = True)
-        print 'prediction using the mean faulted rate:', mean_faulted_rate
-
-        thres_index = int(mean_faulted_rate * len(pred_data_index))
-        result[:-thres_index] = 0
-        result[-thres_index:] = 1
-        ## align the results with input test data using index
-        result = result.ix[pred_data_index]
-        return result
-        '''
-        
-        '''
-        ## aggregate on each row and return the sum
-        pred_df.index = data.index
-        pred_df['label'] = data[self.dep_var_name]
-        result = pred_df.sum(axis=1)
-        result.index = data.index
-        return result
-        '''
+        if score_conversion_type == 'A':
+            ## follow conversion type A
+            ## a majority vote is used to calculate the final result
+            mean_preds = pred_df.mean(axis=1)
+            mean_result = self.convert_scores2binary(mean_preds, 0.5, is_thres_pos = False)
+            return mean_result
+        elif score_conversion_type == 'B':
+            ## Conversion type B
+            ## aggregate the predictions from different models
+            result = pred_df.sum(axis=1)
+            pred_data_index =data.index
+            result.index = pred_data_index
+            result.sort_values(inplace = True)
+            print 'prediction using the mean faulted rate:', mean_faulted_rate
+            thres_index = int(mean_faulted_rate * len(pred_data_index))
+            result[:-thres_index] = 0
+            result[-thres_index:] = 1
+            ## align the results with input test data using index
+            result = result.ix[pred_data_index]
+            return result
+        else: 
+            ## aggregate on each row and return the sum
+            pred_df.index = data.index
+            result = pred_df.sum(axis=1)
+            return result
 
 
 
