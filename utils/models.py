@@ -264,7 +264,7 @@ class CombinedModel(BaseModel):
 
 
 
-    def predict(self, data, score_conversion_type = 'A'):
+    def predict(self, data, score_conversion_type = 'B'):
         '''
         Prediction results from each model is one column of returned DataFrame
         If data contains the column with 'dep_var_name', this functions create 
