@@ -33,11 +33,11 @@ for bin_index in tot_bins:
     start_time = time.time()
     #train, test  = load_processed_bosch_data(data_path, data_yaml_file, data_index = bin_index, load_test=True)
     train = pd.read_csv('/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data/processed_totBins_16_bin_0_train.csv', index_col='Id', nrows=5000)
+    test = pd.read_csv('/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data/processed_totBins_16_bin_0_test.csv', index_col='Id', nrows=5000)
 
 
     ## big loop on the subsets of data
     labels = train[dep_var_name]
-
     slice_num = 2
 
     negative_index = train.index[labels == 0].tolist()
@@ -74,11 +74,10 @@ for bin_index in tot_bins:
         else:
             combined_model.fit(train, dep_var_name, append_models=True)
 
-
-    #pred_df = combined_model.predict(test)
+    pred_df = combined_model.predict(test, score_conversion_type='A')
 
     ## final output from combined model
-    #res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
-    #pred_df.to_csv(res_file_name)
+    res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
+    pred_df.to_csv(res_file_name)
     print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, bin_index, round(time.time() - start_time, 0))
 
