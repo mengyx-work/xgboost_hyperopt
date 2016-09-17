@@ -40,6 +40,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         row_content = []
         for columns_name in columns_names[:-2]:
             row_content.append(model_params[columns_name])
+
         row_content.append(np.mean(results))
         row_content.append(np.std(results))
 
