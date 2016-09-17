@@ -40,6 +40,13 @@ combined_model_params['models_yaml_file']       = trained_model_yaml_file
 ## build the combined model
 combined_model = CombinedModel(combined_model_params)
 
+'''
+Because different score_conversion_type may be use
+in the predict function. This is related to the 
+train step, certain parameters may be needed in
+in the prediction step.
+'''
+
 ##'''
 ############## Section of regular validation #######################
 train_index, valid_index = create_validation_index(train, 0.5, dep_var_name, True)  
@@ -48,9 +55,15 @@ tmp_train  = train.ix[train_index]
 
 combined_model.fit(train, dep_var_name)
 pred_df = combined_model.predict(valid_data)
-print MCC(valid_data[dep_var_name], pred_df)
+print 'MCC score from validation: ', MCC(valid_data[dep_var_name], pred_df)
 #print score_MCC(valid_data[dep_var_name], pred_df)
 #'''
+
+############## Section of cross_valiate fit #######################
+combined_model.cross_vlidate_fit(train, dep_var_name)
+pred_df.label_name = dep_var_name
+pred_df = combined_model.predict(valid_data)
+print 'MCC score from cross_valiate_fit: ', MCC(valid_data[dep_var_name], pred_df)
 
 
 #'''
@@ -59,5 +72,4 @@ print MCC(valid_data[dep_var_name], pred_df)
 results = cross_validate_model(train, dep_var_name, combined_model, score_MCC, 3)
 print results
 #'''
-
 
