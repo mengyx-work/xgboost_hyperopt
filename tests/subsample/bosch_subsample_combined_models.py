@@ -56,7 +56,6 @@ for bin_index in tot_bins:
         raw_models_yaml_file    = 'raw_combined_models.yml'
         raw_models_yaml_path    = './'
         trained_model_yaml_file = 'trained_combined_model.yml'
-        #project_path            = './data_subset_{}/data_bin_{}_models'.format(i, bin_index)
         project_path            = './data_bin_{}_models'.format(bin_index)
 
         ## train the comined model
@@ -70,11 +69,12 @@ for bin_index in tot_bins:
         combined_model = CombinedModel(combined_model_params)
         tmp_train = train.ix[data_index]
         if i == 0:
-            combined_model.fit(train, dep_var_name)
+            combined_model.fit(tmp_train, dep_var_name)
         else:
-            combined_model.fit(train, dep_var_name, append_models=True)
+            combined_model.fit(tmp_train, dep_var_name, append_models=True)
 
-    pred_df = combined_model.predict(test, score_conversion_type='A')
+    ## outside the slice loop, predict by using the combined models
+    pred_df = combined_model.predict(test, score_conversion_type='B')
 
     ## final output from combined model
     res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
