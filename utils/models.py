@@ -299,12 +299,11 @@ class CombinedModel(BaseModel):
                 ## scores conversion type B
                 ## for each model, scores are converted into rank
                 mean_faulted_rate = model_dict['fault_rate']
-                scores = model.predict(data)
                 pred_df[column_name] = pd.Series(scores).rank()
             else:
                 ## generic Score conversion type C
                 ## traditional way to collect data from each model
-                pred_df[column_name] = model.predict(data)
+                pred_df[column_name] = scores
 
         if score_conversion_type == 'A':
             ## follow conversion type A
