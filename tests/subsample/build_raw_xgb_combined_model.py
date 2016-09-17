@@ -56,15 +56,23 @@ list_param_dict['random_state'] = range(0, 100, 4)
 auto_fill_model_dicts(models, et_const_params, list_param_dict, 'ExtraTree')
 '''
 
-'''
-##### example of single xgboost model ######
-model_dict = {}
 
+model_index = 0
+model_dict = {}
+model_dict['model_type'] = 'ExtraTree'
+model_dict['model_params'] = {'random_state' : 0, 'n_estimators' : 500, 'max_depth' : 4, 'criterion' : 'entropy', 'n_jobs' : -1}
+models[model_index] = model_dict
+
+
+#'''
+##### example of single xgboost model ######
+model_index += 1
+model_dict = {}
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 20
+params["num_round"]                = 10
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
@@ -78,8 +86,9 @@ params["val"]                      = False
 model_dict['model_type'] = 'Xgboost'
 model_dict['model_params'] = params
 models[model_index] = model_dict
-'''
+#'''
 
+'''
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
@@ -98,19 +107,14 @@ xgb_const_params = params
 xgb_list_param_dict = {}
 xgb_list_param_dict['seed'] = range(0, 100, 20)
 auto_fill_model_dicts(models, xgb_const_params, xgb_list_param_dict, 'Xgboost')
-
+'''
 
 with open(os.path.join(project_path, models_yaml_file), 'w') as yml_stream:
     yaml.dump(models, yml_stream, default_flow_style=False)
 
 
-'''
-model_index = 0
-model_dict = {}
-model_dict['model_type'] = 'ExtraTree'
-model_dict['model_params'] = {'random_state' : 0, 'n_estimators' : 500, 'max_depth' : 4, 'criterion' : 'entropy', 'n_jobs' : -1}
-models[model_index] = model_dict
 
+'''
 
 model_index += 1
 model_dict = {}

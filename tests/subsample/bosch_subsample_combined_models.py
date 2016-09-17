@@ -31,12 +31,14 @@ for bin_index in tot_bins:
 
     print '{} \n start training and prediction on data bin: {}'.format(print_colors.GREEN, bin_index)
     start_time = time.time()
-    train, test  = load_processed_bosch_data(data_path, data_yaml_file, data_index = bin_index, load_test=True)
+    #train, test  = load_processed_bosch_data(data_path, data_yaml_file, data_index = bin_index, load_test=True)
+    train = pd.read_csv('/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data/processed_totBins_16_bin_0_train.csv', index_col='Id', nrows=5000)
+
 
     ## big loop on the subsets of data
     labels = train[dep_var_name]
 
-    slice_num = 10
+    slice_num = 2
 
     negative_index = train.index[labels == 0].tolist()
     positive_index = train.index[labels == 1].tolist()
@@ -54,7 +56,8 @@ for bin_index in tot_bins:
         raw_models_yaml_file    = 'raw_combined_models.yml'
         raw_models_yaml_path    = './'
         trained_model_yaml_file = 'trained_combined_model.yml'
-        project_path            = './data_subset_{}/data_bin_{}_models'.format(i, bin_index)
+        #project_path            = './data_subset_{}/data_bin_{}_models'.format(i, bin_index)
+        project_path            = './data_bin_{}_models'.format(bin_index)
 
         ## train the comined model
         combined_model_params = {}
@@ -66,13 +69,16 @@ for bin_index in tot_bins:
         ## build the combined model
         combined_model = CombinedModel(combined_model_params)
         tmp_train = train.ix[data_index]
-        combined_model.fit(train, dep_var_name)
+        if i == 0:
+            combined_model.fit(train, dep_var_name)
+        else:
+            combined_model.fit(train, dep_var_name, append_models=True)
 
 
-    pred_df = combined_model.predict(test)
+    #pred_df = combined_model.predict(test)
 
     ## final output from combined model
-    res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
-    pred_df.to_csv(res_file_name)
+    #res_file_name = 'bosch_results_data_bin_{}.csv'.format(bin_index)
+    #pred_df.to_csv(res_file_name)
     print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, bin_index, round(time.time() - start_time, 0))
 
