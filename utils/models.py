@@ -210,7 +210,7 @@ class CombinedModel(BaseModel):
         mean_faulted_rate = np.mean(train[self.dep_var_name])
 
         if append_models:
-            with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
+            with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'r') as yml_stream:
                 curr_models_dict = yaml.load(yml_stream)
             curr_max_model_index = max([int(i) for i in curr_models_dict.keys()]) + 1
 
@@ -245,6 +245,7 @@ class CombinedModel(BaseModel):
                 yaml.dump(curr_models_dict, yml_stream, default_flow_style=False)
             else:
                 yaml.dump(models_dict, yml_stream, default_flow_style=False)
+#        yml_stream.close()
 
 
 
