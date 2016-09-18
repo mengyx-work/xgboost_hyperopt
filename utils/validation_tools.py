@@ -22,19 +22,22 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
     row_counter = 0
 
     start_time = time.time()
+    grid_point_counter = 0
+
     ## loop through the grid points  
     for param in params_list:
+        grid_point_counter += 1
+        
         model_params = {}
         for value, key in zip(param, param_dict.keys()):
             model_params[key] = value
             
         ## initiate new model from model_class
-        #tmp_train = train.copy()
         if not is_xgb_model:
             model = model_class(model_params)
             results = cross_validate_model(train, dep_var_name, model, eval_func, fold_num)
         else:
-            xgb_model = model_class(label_name = dep_var_name, params = model_params)
+            xgb_model = model_class(label_name = dep_var_name, params = model_params, model_file='grid_search_xgb_model_{}'.format(grid_point_counter))
             results = xgb_model.cross_validate_fit(eval_func, train, n_folds=fold_num)
 
         row_content = []
