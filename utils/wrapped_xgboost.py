@@ -277,13 +277,13 @@ class xgboost_classifier(object):
         #print 'train shape:', train.shape
 
         fold_counter = -1
-        self.model_file_name = '{}_cross_validate_fold_'.format(self.model_file_name)
+        self.model_file_name = '{}_cross_validate_fold__'.format(self.model_file_name)
         for train_index, test_index in skf:
             fold_counter += 1
             kfold_train = train.iloc[train_index, :]
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
-            self.model_file_name = '{}_{}'.format(self.model_file_name, fold_counter)
+            self.model_file_name = '{}_{}'.format(self.model_file_name[:-2], fold_counter)
             self.fit(train = kfold_train, use_weights = use_weights)
             scores = self.predict(kfold_test)
             result = eval_func(kfold_test_label, scores)
