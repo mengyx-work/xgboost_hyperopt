@@ -159,7 +159,7 @@ class CombinedModel(BaseModel):
 
 
 
-    def cross_vlidate_fit(self, train, dep_var_name):
+    def cross_vlidate_fit(self, train, dep_var_name, fold_num=3):
         
         self.dep_var_name = dep_var_name
 
