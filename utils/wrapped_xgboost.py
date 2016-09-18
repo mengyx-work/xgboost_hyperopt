@@ -183,7 +183,6 @@ class xgboost_classifier(object):
             scale_pos_weight = 1. * np.sum(train[self.label_name] == 0) / np.sum(train[self.label_name] == 1)
             self.fit_params['scale_pos_weight'] = scale_pos_weight
 
-        
         if use_weights:
             weights = self._create_weight_by_label(train[self.label_name])
             ## check the weight dimension with train
@@ -247,7 +246,6 @@ class xgboost_classifier(object):
             self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
         
         self._create_feature_importance_map(self.fea_map_file)
-
         self.bst.save_model(self.model_file_name)
         print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
 
@@ -278,10 +276,13 @@ class xgboost_classifier(object):
         skf = StratifiedKFold(train[self.label_name], n_folds, shuffle=True)
         #print 'train shape:', train.shape
 
+        fold_counter = -1
         for train_index, test_index in skf:
+            fold_counter += 1
             kfold_train = train.iloc[train_index, :]
             kfold_test  = train.iloc[test_index, :]
             kfold_test_label = kfold_test[self.label_name]
+            self.model_file_name = '{}_cross_validate_fold_{}'.format(self.model_file_name, fold_counter)
             self.fit(train = kfold_train, use_weights = use_weights)
             scores = self.predict(kfold_test)
             result = eval_func(kfold_test_label, scores)
