@@ -24,14 +24,17 @@ dep_var_name = 'Response'
 
 
 
-def load_processed_bosch_data(data_path, data_yaml_file, data_index='0', load_test=False):
+def load_processed_bosch_data(data_path, data_yaml_file, data_index='0', load_test=False, nrows=None):
 
     with open(os.path.join(data_path, data_yaml_file), 'r') as yml_stream:
         data_dict = yaml.load(yml_stream)
 
     print 'loading bosch data from ', data_path
     train_file = os.path.join(data_path, data_dict[data_index]['train_file'])
-    train = pd.read_csv(train_file, index_col='Id')
+    if nrows is None:
+        train = pd.read_csv(train_file, index_col='Id')
+    else:
+        train = pd.read_csv(train_file, index_col='Id', nrows=nrows)
 
     if load_test:
       test_file	  = os.path.join(data_path, data_dict[data_index]['test_file'])
