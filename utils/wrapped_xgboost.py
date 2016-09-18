@@ -48,7 +48,8 @@ class xgboost_classifier(object):
 
         if params is not None:
             ## try to load use_weights from params
-            param_use_weights = params.pop('use_weights', False)
+            if 'use_weights' in params.keys():
+                param_use_weights = params['use_weights']
             self.use_weights = any([param_use_weights, self.use_weights])
 
             for key, value in params.iteritems():
