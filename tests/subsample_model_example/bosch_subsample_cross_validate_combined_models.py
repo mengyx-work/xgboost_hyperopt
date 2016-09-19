@@ -29,7 +29,7 @@ data_yaml_file      = 'complete_subset_data_3_bins_dict.yml'
 #'''
 
 #train, test  = load_processed_bosch_data(data_path, data_yaml_file, data_index = bin_index, load_test=True)
-train_df = load_processed_bosch_data(data_path, data_yaml_file, data_index = '0', load_test=False)
+train_df = load_processed_bosch_data(data_path, data_yaml_file, data_index = 'NaN', load_test=False)
 #train_df = pd.read_csv('/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data/processed_totBins_16_bin_0_train.csv', index_col='Id', nrows=5000)
 #test = pd.read_csv('/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_bins_data/processed_totBins_16_bin_0_test.csv', index_col='Id', nrows=5000)
 
