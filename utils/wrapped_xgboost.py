@@ -50,7 +50,7 @@ class xgboost_classifier(object):
             ## try to load use_weights from params
             if 'use_weights' in params.keys():
                 param_use_weights = params['use_weights']
-            self.use_weights = any([param_use_weights, self.use_weights])
+                self.use_weights = any([param_use_weights, self.use_weights])
 
             for key, value in params.iteritems():
                 self.params[key] = value
