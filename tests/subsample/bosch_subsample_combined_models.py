@@ -12,7 +12,6 @@ from utils.models import CombinedModel
 from utils.validation_tools import score_MCC, MCC, create_validation_index, cross_validate_model
 
 dep_var_name = 'Response'
-tot_bins = [str(x) for x in range(15)] + ['NaN']
 
 '''
 ## 15 bins data
@@ -21,7 +20,6 @@ data_path           = '/home/ymm/kaggle/bosch_data/bosch_complete_processed_15_b
 data_yaml_file      = 'bosch_processed_data_dict.yml'
 '''
 
-
 #'''
 ## 3 bins data
 project_yml_path    = '/mnt/home/ymm/kaggle/compete/current'
@@ -29,6 +27,8 @@ data_path           = '/home/ymm/kaggle/bosch_data/bosch_complete_processed_3_bi
 data_yaml_file      = 'complete_subset_data_3_bins_dict.yml'
 #'''
 
+## change the tot_bins according to the data
+tot_bins = [str(x) for x in range(2)] + ['NaN']
 
 for bin_index in tot_bins:
 
