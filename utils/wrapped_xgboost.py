@@ -39,6 +39,7 @@ class xgboost_classifier(object):
         self.params["seed"]                     = 100
         self.params['early_stopping_ratio']     = 0.08
         self.params['nthread']                  = multiprocessing.cpu_count()
+        self.params['verbose_eval']             = True
         #self.params['nthread']                  = 2 * multiprocessing.cpu_count()
         #self.params['nthread']                  = 8
 
@@ -181,7 +182,7 @@ class xgboost_classifier(object):
             self.use_weights = self.fit_params['use_weights']
         else:
             self.use_weights = False
-        use_weights = any([use_weights, self.use_weights])
+        self.use_weights = any([use_weights, self.use_weights])
 
         ## collect the use_scale_pos_weight from fit_params
         if 'use_scale_pos_weight' in self.fit_params.keys():
@@ -190,11 +191,11 @@ class xgboost_classifier(object):
             self.use_scale_pos_weight = False
 
 
-        if use_scale_pos_weight:
+        if self.use_scale_pos_weight:
             scale_pos_weight = 1. * np.sum(train[self.label_name] == 0) / np.sum(train[self.label_name] == 1)
             self.fit_params['scale_pos_weight'] = scale_pos_weight
 
-        if use_weights:
+        if self.use_weights:
             weights = self._create_weight_by_label(train[self.label_name])
             ## check the weight dimension with train
             if len(weights) != train.shape[0]:
@@ -211,8 +212,9 @@ class xgboost_classifier(object):
         self.fea_map_file = tmpfile.name
         self._ceate_feature_map(train.columns, self.fea_map_file)
 
-        num_round   = self.fit_params['num_round']
-        val         = self.fit_params['val']
+        num_round       = self.fit_params['num_round']
+        val             = self.fit_params['val']
+        verbose_eval    = self.fit_params['verbose_eval']
 
         # optional attributes
         self.best_score, self.best_iters = None, None
@@ -243,7 +245,7 @@ class xgboost_classifier(object):
 
 
             self.watchlist = [(dtrain, 'train'), (dvalid, 'val')]
-            self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist, early_stopping_rounds = self._EARLY_STOPPING_ROUNDS)
+            self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist, verbose_eval = verbose_eval, early_stopping_rounds = self._EARLY_STOPPING_ROUNDS)
             try:
                 self.best_score = self.bst.best_score
                 self.best_iters = self.bst.best_iteration
@@ -259,7 +261,7 @@ class xgboost_classifier(object):
                 dtrain = xgb.DMatrix(np.array(train), label = np.array(train_labels), missing = np.NaN, weight=weights)
 
             self.watchlist = [(dtrain, 'train')]
-            self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist)
+            self.bst = xgb.train(self.fit_params, dtrain, num_round, self.watchlist, verbose_eval = verbose_eval)
         
         self._create_feature_importance_map(self.fea_map_file)
         self.bst.save_model(self.model_file_name)
