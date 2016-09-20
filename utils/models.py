@@ -174,7 +174,7 @@ class CombinedModel(BaseModel):
         summary_dict = {}
         curr_max_model_index = -1
         for index, model_dict in models_dict.items():
-            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, 2)
+            results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, fold_num)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
             summary_dict.update(tmp_summary_dict)
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
