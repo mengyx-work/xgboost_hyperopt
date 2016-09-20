@@ -183,12 +183,12 @@ class xgboost_classifier(object):
             self.use_weights = False
         use_weights = any([use_weights, self.use_weights])
 
+        ## collect the use_scale_pos_weight from fit_params
         if 'use_scale_pos_weight' in self.fit_params.keys():
             self.use_scale_pos_weight = self.fit_params['use_scale_pos_weight']
         else:
             self.use_scale_pos_weight = False
 
-        use_scale_pos_weight = any([self.use_scale_pos_weight, use_scale_pos_weight])
 
         if use_scale_pos_weight:
             scale_pos_weight = 1. * np.sum(train[self.label_name] == 0) / np.sum(train[self.label_name] == 1)
