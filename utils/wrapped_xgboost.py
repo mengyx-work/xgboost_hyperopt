@@ -22,7 +22,7 @@ class xgboost_classifier(object):
     3. cross_validate_fit uses fit and predict functions, so it doesn't remove dep_var column
     '''
 
-    def __init__(self, train = None, label_name = None, params = None, use_weights = False, use_scale_pos_weight = False,  model_file = './current_xgboost_model'):
+    def __init__(self, train = None, label_name = None, params = None, use_weights = False, model_file = './current_xgboost_model'):
 
         self.params = {}
 
@@ -44,13 +44,14 @@ class xgboost_classifier(object):
 
         self.model_file_name        = model_file
         self.use_weights            = use_weights
-        self.use_scale_pos_weight   = use_scale_pos_weight
 
         if params is not None:
+            '''
             ## try to load use_weights from params
             if 'use_weights' in params.keys():
                 param_use_weights = params['use_weights']
                 self.use_weights = any([param_use_weights, self.use_weights])
+            '''
 
             for key, value in params.iteritems():
                 self.params[key] = value
@@ -162,7 +163,7 @@ class xgboost_classifier(object):
         os.remove(fea_map_file)
 
 
-    def fit(self, train = None, label_name = None, use_weights = False, use_scale_pos_weight = False, params = None, val = None):
+    def fit(self, train = None, label_name = None, use_weights = False, params = None, val = None):
         '''
         train given here is not the self.train, when train is missing self.train will be used
         Design principle
@@ -176,7 +177,17 @@ class xgboost_classifier(object):
         self._check_xgboost_params(label_name, params, val)
 
         ## combine the initial param with current use_weights
+        if 'use_weights' in self.fit_params.keys():
+            self.use_weights = self.fit_params['use_weights']
+        else:
+            self.use_weights = False
         use_weights = any([use_weights, self.use_weights])
+
+        if 'use_scale_pos_weight' in self.fit_params.keys():
+            self.use_scale_pos_weight = self.fit_params['use_scale_pos_weight']
+        else:
+            self.use_scale_pos_weight = False
+
         use_scale_pos_weight = any([self.use_scale_pos_weight, use_scale_pos_weight])
 
         if use_scale_pos_weight:
@@ -188,6 +199,11 @@ class xgboost_classifier(object):
             ## check the weight dimension with train
             if len(weights) != train.shape[0]:
                 sys.exit('the weights dimension {} does not match train {}, abort...'.format(len(weights), train.shape[0]))
+
+        if 'use_base_score' in self.fit_params.keys() and self.fit_params['use_base_score']:
+            base_score = float(np.mean(train[self.label_name]))
+            self.fit_params['base_score'] = base_score
+            print 'a base_score {} is used in the xgboost model...'.format(base_score)
 
         ## split the train_labels from train
         train, train_labels = self._validate_training_data(train, split_train = True)
