@@ -8,6 +8,7 @@
 *.fmap
 *_model
 *.pkl
+tmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
