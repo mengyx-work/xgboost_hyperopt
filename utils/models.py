@@ -185,29 +185,30 @@ class CombinedModel(BaseModel):
         curr_max_model_index = -1
         model_count = -1
         trained_yaml_file = join(self.model_params['project_path'], self.model_params['models_yaml_file'])
+        ## loop through all the models in raw model yaml file
         for index, model_dict in models_dict.items():
             model_count += 1
             results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, fold_num)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
-            ## try to load the yml file on trained models
+            ## try to append tmp_summary_dict to yaml file of trained models
             if model_count == 0:
                 if isfile(trained_yaml_file):
                     print 'warning! trained yaml file already exists, overwriting it...'
-                with open(trained_yaml_file, 'w') as yml_stream:
-                    yaml.dump(tmp_summary_dict, yml_stream, default_flow_style=False)
+                summary_dict = tmp_summary_dict.copy()
             else:
-                with open(trained_yaml_file, 'r') as yml_stream:
-            models_dict = yaml.load(yml_stream)
-
                 if not isfile(trained_yaml_file):
                     raise ValueError('failed to find trained yaml file {}'.format(trained_yaml_file))
+                ## load the content from trained yaml file
+                with open(trained_yaml_file, 'r') as yml_stream:
+                    summary_dict = yaml.load(yml_stream)
+                summary_dict.update(tmp_summary_dict)
 
-            #summary_dict.update(tmp_summary_dict)
+            with open(trained_yaml_file, 'w') as yml_stream:
+                yaml.dump(summary_dict, yml_stream, default_flow_style=False)
             print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
 
         #with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
         #    yaml.dump(summary_dict, yml_stream, default_flow_style=False)
-
 
 
 
