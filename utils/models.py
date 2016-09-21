@@ -187,7 +187,9 @@ class CombinedModel(BaseModel):
         trained_yaml_file = join(self.model_params['project_path'], self.model_params['models_yaml_file'])
         ## loop through all the models in raw model yaml file
         for index, model_dict in models_dict.items():
+            start_time = time.time()
             model_count += 1
+            ## cross validate the model with training data
             results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, fold_num)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
             ## try to append tmp_summary_dict to yaml file of trained models
@@ -205,7 +207,7 @@ class CombinedModel(BaseModel):
 
             with open(trained_yaml_file, 'w') as yml_stream:
                 yaml.dump(summary_dict, yml_stream, default_flow_style=False)
-            print 'finished training {} model indexed {} from combined model'.format(model_dict['model_type'], index)
+            print 'finished training {} model indexed {} combined model using {} seconds; total {} models have been built'.format(model_dict['model_type'], index, round(time.time() -start_time, 0), model_count)
 
         #with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
         #    yaml.dump(summary_dict, yml_stream, default_flow_style=False)
