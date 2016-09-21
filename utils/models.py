@@ -188,6 +188,7 @@ class CombinedModel(BaseModel):
         ## loop through all the models in raw model yaml file
         for index, model_dict in models_dict.items():
             start_time = time.time()
+            curr_max_model_index += 1
             model_count += 1
             ## cross validate the model with training data
             results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, fold_num)
