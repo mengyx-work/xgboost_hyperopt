@@ -207,7 +207,7 @@ class CombinedModel(BaseModel):
 
             with open(trained_yaml_file, 'w') as yml_stream:
                 yaml.dump(summary_dict, yml_stream, default_flow_style=False)
-            print 'finished training {} model indexed {} combined model using {} seconds; total {} models have been built'.format(model_dict['model_type'], index, round(time.time() -start_time, 0), model_count)
+            print 'finished training {} model indexed {} combined model using {} seconds; total {} models out of {}'.format(model_dict['model_type'], index, round(time.time() -start_time, 0), model_count, len(models_dict))
 
         #with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'w') as yml_stream:
         #    yaml.dump(summary_dict, yml_stream, default_flow_style=False)
