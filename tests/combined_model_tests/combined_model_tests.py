@@ -29,7 +29,7 @@ data_path = '/home/ymm/kaggle/bosch_data/bosch_complete_processed_6_bins_data'
 data_yaml_file = 'complete_subset_data_6_bins_dict.yml'
 '''
 
-train = load_processed_bosch_data(data_path, data_yaml_file, data_index='0', nrows=5000)
+train = load_processed_bosch_data(data_path, data_yaml_file, data_index='0', nrows=10000)
 
 ## train the comined model
 combined_model_params = {}
@@ -62,7 +62,7 @@ print 'MCC score from validation: ', MCC(valid_data[dep_var_name], pred_df)
 ############## Section of cross_valiate fit #######################
 combined_model.cross_vlidate_fit(train, dep_var_name)
 pred_df.label_name = dep_var_name
-pred_df = combined_model.predict(valid_data)
+pred_df = combined_model.predict(valid_data, score_conversion_type='A')
 print 'MCC score from cross_valiate_fit: ', MCC(valid_data[dep_var_name], pred_df)
 
 
