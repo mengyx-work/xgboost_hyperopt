@@ -25,7 +25,7 @@ class BaseModel(object):
 
 class CombinedModel(BaseModel):
 
-    ## key for the xgboost binary file 
+    ## dict key for the xgboost binary file 
     xgb_binary_file_key = 'xgb_binary_file_name'
 
     def __init__(self, model_params):
@@ -42,7 +42,7 @@ class CombinedModel(BaseModel):
     @staticmethod
     def _initiate_model_by_type(model_type, model_params):
         '''
-        helper function to initiate the 
+        helper function to initiate and return
         proper model based on the 'model_type'
         '''
         if model_type == 'ExtraTree':
@@ -119,6 +119,15 @@ class CombinedModel(BaseModel):
 
     @classmethod
     def build_cross_validate_models(cls, train_df, dep_var_name, model_dict, project_path, curr_max_model_index, fold_num=3):
+        '''
+        train_df: a Pandas DataFrame of training data
+        model_dict: a dictionary of one set of model parameters
+        fold_num: the number of folds to cross validate the model
+        return:
+        results: cross validation results
+        thresholds: the thresholds for each trained model based on MCC score
+        summary_dict: a collection of updated informations about trained model
+        '''
         results, thresholds = [], []
         ## part of the models_dict
         summary_dict = {}
@@ -133,7 +142,7 @@ class CombinedModel(BaseModel):
             tmp_model_dict = model_dict.copy()
             curr_max_model_index += 1
             if tmp_model_dict['model_type'] != 'Xgboost':
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds_eval.pkl'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds.pkl'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
                 ## no copy of train, specific model will spawn a copy of training data
@@ -141,7 +150,7 @@ class CombinedModel(BaseModel):
                 pickle.dump(model, open(os.path.join(project_path, model_pickle_file), 'wb'), -1)
             else:
                 ## for xgboost model, a binary booster is saved insteead of the class object
-                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds_eval'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
+                model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
                 tmp_model_dict['model_params'][CombinedModel.xgb_binary_file_key] = os.path.join(project_path, model_pickle_file)
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
