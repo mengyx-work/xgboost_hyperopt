@@ -14,7 +14,8 @@ dep_var_name = 'Response'
 ## params for combined model
 raw_models_yaml_file    = 'raw_combined_models.yml'
 trained_model_yaml_file = 'trained_combined_model.yml'
-project_path            = '/mnt/home/ymm/kaggle/compete/current/tmp'
+#project_path            = '/mnt/home/ymm/kaggle/compete/current/tmp'
+project_path            = './tmp'
 raw_models_yaml_path    = './'
 
 ## 15 bins data
@@ -40,12 +41,6 @@ combined_model_params['models_yaml_file']       = trained_model_yaml_file
 ## build the combined model
 combined_model = CombinedModel(combined_model_params)
 
-'''
-Because different score_conversion_type may be use
-in the predict function. This is related to the 
-train step, certain parameters may be needed in
-in the prediction step.
-'''
 
 ##'''
 ############## Section of regular validation #######################
