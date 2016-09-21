@@ -60,31 +60,27 @@ def generate_models_params_dict(models, const_params, tuning_params, model_type,
         print 'build a {} model using params: {}'.format(model_type, model_params)
         models[model_index] = model_dict
 
+    return model_index
 
-'''
+
 ## RandomForest models
-rf_const_params = {'random_state' : 9999, 'n_estimators' : 3600, 'max_depth' : 5, 'criterion' : 'entropy', 'n_jobs' : -1}
+rf_const_params = {'random_state' : 9999, 'n_estimators' : 10, 'max_depth' : 5, 'criterion' : 'entropy', 'n_jobs' : -1}
 list_param_dict = {}
-list_param_dict['max_depth'] = range(3, 8, 1)
-list_param_dict['n_estimators'] = [1000, 2000, 3000, 4000]
 list_param_dict['criterion'] = ['gini', 'entropy']
-generate_models_params_dict(models, rf_const_params, list_param_dict, 'RandomForest', model_index)
+curr_mode_index = generate_models_params_dict(models, rf_const_params, list_param_dict, 'RandomForest', model_index)
 
 ## ExtraTree models
-rf_const_params = {'random_state' : 9999, 'n_estimators' : 3600, 'max_depth' : 5, 'criterion' : 'entropy', 'n_jobs' : -1}
+rf_const_params = {'random_state' : 9999, 'n_estimators' : 10, 'max_depth' : 5, 'criterion' : 'entropy', 'n_jobs' : -1}
 list_param_dict = {}
-list_param_dict['max_depth'] = range(3, 8, 1)
-list_param_dict['n_estimators'] = [300, 500, 700, 900]
 list_param_dict['criterion'] = ['gini', 'entropy']
-generate_models_params_dict(models, rf_const_params, list_param_dict, 'ExtraTree', model_index)
-'''
+generate_models_params_dict(models, rf_const_params, list_param_dict, 'ExtraTree', curr_mode_index)
 
 
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 2500
+params["num_round"]                = 5
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
@@ -99,11 +95,8 @@ params["val"]                      = False
 
 xgb_const_params = params
 list_param_dict = {}
-list_param_dict['num_round'] = [1000, 3000, 5000, 7000]
-list_param_dict['max_depth'] = [3, 5, 7, 9]
-list_param_dict['colsample_bytree'] = [1., 0.8, 0.6]
-list_param_dict['subsample'] = [1., 0.8, 0.6]
-generate_models_params_dict(models, xgb_const_params, list_param_dict, 'Xgboost', model_index)
+list_param_dict['max_depth'] = [3, 5]
+generate_models_params_dict(models, xgb_const_params, list_param_dict, 'Xgboost', curr_mode_index)
 
 with open(os.path.join(project_path, models_yaml_file), 'w') as yml_stream:
     yaml.dump(models, yml_stream, default_flow_style=False)
