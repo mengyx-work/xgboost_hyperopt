@@ -132,14 +132,14 @@ def getTimeChangeColumns(series):
                               first_id_value, last_id_value, first_num_value])
 
 
-def build_IndexFeatures(combined_train_dat):
+def build_IndexFeatures(combined_train_dat, start_time_column = 'start_time'):
     dat_new_fea = pd.DataFrame()
     dat_new_fea['first_time_index']  = combined_train_dat['first_time_value'].argsort() + 1
     dat_new_fea['last_time_index']   = combined_train_dat['last_time_value'].argsort() + 1
     dat_new_fea['index_ratio']       = dat_new_fea['first_time_index'] / dat_new_fea['last_time_index']
     dat_new_fea['index']             = combined_train_dat.index
 
-    if 'start_time' in combined_train_dat.columns:
+    if start_time_column in combined_train_dat.columns:
         dat_new_fea['start_time_diff']          = combined_train_dat['start_time'].diff()
         dat_new_fea['start_time_index']         = combined_train_dat['start_time'].argsort() + 1
         dat_new_fea['start_time_index_ratio_1'] = dat_new_fea['first_time_index'] / dat_new_fea['index']
