@@ -74,7 +74,7 @@ def getRelativeTimeColumns(series):
    
 
 
-def getTimeSteps(series):
+def getTimeSteps(series, unique_value_counts=6):
     '''
     in each row/series, use the sorted value_count
     to find the time steps and use the value, counts
@@ -104,6 +104,18 @@ def getTimeSteps(series):
 
 
 def getTimeChangeColumns(series):
+    '''
+    function to find the first column that has
+    a different date value compared to the start_time.
+
+    'start_time' is defined to be the value of first
+    column if it's not NaN.
+
+    If 'sart_time' is NaN, the first none-NaN value 
+    is treated as the different value
+
+    'first_num_value' is the first none-NaN numerical value
+    '''
     start_time = series[0]
     tmp_series = series.dropna()
     if start_time == np.NaN:
@@ -123,8 +135,6 @@ def getTimeChangeColumns(series):
         else:
             first_index     = tmp_series.index[tmp_series != start_time][0]
             last_index      = tmp_series.index[tmp_series != start_time][-1]
-            first_id_value  = series[first_index]
-            last_id_value   = series[last_index]
             first_id_value  = tmp_series[first_index]
             last_id_value   = tmp_series[last_index]
             time_diff       = last_id_value - first_id_value
@@ -135,6 +145,12 @@ def getTimeChangeColumns(series):
 
 
 def build_IndexFeatures(combined_train_dat, start_time_column = 'start_time'):
+    '''
+    function uses a combined DataFrame of train and test to build
+    index/ordder based on different columns.
+    '''
+    expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value']
+                        
     dat_new_fea = pd.DataFrame()
     dat_new_fea['first_time_index']  = combined_train_dat['first_time_value'].argsort() + 1
     dat_new_fea['last_time_index']   = combined_train_dat['last_time_value'].argsort() + 1
