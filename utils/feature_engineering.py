@@ -148,32 +148,51 @@ def getTimeChangeColumns(series):
 
 
 
+def build_sortedData_indexDiff(train_test, dat_new_fea, column_list):
+    for column in column_list:
+        train_test = train_test.sort_values(by=[column, 'index'], ascending=True)
+        dat_new_fea['{}_index_diff_0'.format(column)] = train_test['index'].diff().fillna(9999999).astype(int)
+        dat_new_fea['{}_index_diff_1'.format(column)] = train_test['index'].iloc[::-1].diff().fillna(9999999).astype(int)
 
-def build_IndexFeatures(combined_train_dat, start_time_column = 'start_time'):
+
+def build_IndexFeatures(train_test, start_time_column = 'start_time'):
     '''
     function uses a combined DataFrame of train and test to build
     index/ordder based on different columns.
     '''
-    expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value']
+    expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value',
+                        'first_date_value']
                         
     dat_new_fea = pd.DataFrame()
-    dat_new_fea['first_time_index']  = combined_train_dat['first_time_value'].argsort() + 1
-    dat_new_fea['last_time_index']   = combined_train_dat['last_time_value'].argsort() + 1
+    dat_new_fea['first_time_index']  = train_test['first_time_value'].argsort() + 1
+    dat_new_fea['last_time_index']   = train_test['last_time_value'].argsort() + 1
     dat_new_fea['index_ratio']       = dat_new_fea['first_time_index'] / dat_new_fea['last_time_index']
-    dat_new_fea['index']             = combined_train_dat.index
+    dat_new_fea['index']             = train_test.index
 
-    if start_time_column in combined_train_dat.columns:
-        dat_new_fea['start_time_diff']          = combined_train_dat['start_time'].diff()
-        dat_new_fea['start_time_index']         = combined_train_dat['start_time'].argsort() + 1
+    if start_time_column in train_test.columns:
+        dat_new_fea['start_time_diff']          = train_test['start_time'].diff()
+        dat_new_fea['start_time_index']         = train_test['start_time'].argsort() + 1
         dat_new_fea['start_time_index_ratio_1'] = dat_new_fea['first_time_index'] / dat_new_fea['index']
         dat_new_fea['start_time_index_ratio_2'] = dat_new_fea['last_time_index'] / dat_new_fea['index']
+
+        ## Bosch approach to generate features
+        build_sortedData_indexDiff(train_test, dat_new_fea, ['start_time'])
+        #train_test = train_test.sort_values(by=['start_time', 'index'], ascending=True)
+        #dat_new_fea['start_time_index_diff_0'] = train_test['index'].diff().fillna(9999999).astype(int)
+        #dat_new_fea['start_time_index_diff_1'] = train_test['index'].iloc[::-1].diff().fillna(9999999).astype(int)
     
-    dat_new_fea['time_ratio_value_index']    = combined_train_dat['time_ratio_value'].argsort() + 1
-    dat_new_fea['first_time_value_index']    = combined_train_dat['first_time_value'].argsort() + 1
-    dat_new_fea['first_date_value_index']    = combined_train_dat['first_date_value'].argsort() + 1
+    dat_new_fea['time_ratio_value_index']    = train_test['time_ratio_value'].argsort() + 1
+    dat_new_fea['first_time_value_index']    = train_test['first_time_value'].argsort() + 1
+    dat_new_fea['first_date_value_index']    = train_test['first_date_value'].argsort() + 1
     dat_new_fea['first_date_value_index_ratio_1'] = dat_new_fea['first_time_index'] / dat_new_fea['index']
     dat_new_fea['first_date_value_index_ratio_2'] = dat_new_fea['last_time_index'] / dat_new_fea['index']
 
+    '''
+    learned from Bosch that sort the data by different interesting columns, 
+    the relatively difference between adjacent rows can be useful
+    '''
+    build_sortedData_indexDiff(train_test, dat_new_fea, ['first_ratio_value', 'first_time_value', 'last_time_value', 'first_date_value'])
+  
     return dat_new_fea
 
 
