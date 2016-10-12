@@ -33,6 +33,10 @@ def BasicDate_FeatureEngineering(tmp_train_dat, start_time_column=None):
 
 
 def NumericalFeatureEngineering(df, col_ignore = ['Response']):
+    '''
+    function to create general engineering features
+    for numerical columns
+    '''
     tmp_df = df.loc[:, ~df.columns.isin(col_ignore)]
     new_fea_df = pd.DataFrame()
     encoder = preprocessing.LabelEncoder()
@@ -41,7 +45,6 @@ def NumericalFeatureEngineering(df, col_ignore = ['Response']):
     encoder.fit(column_names)
     
     new_fea_df['num_mean'] = tmp_df.mean(axis=1)
-    
     new_fea_df['num_sum'] = tmp_df.sum(axis=1)
     new_fea_df['num_max'] = tmp_df.max(axis=1)
     new_fea_df['num_min'] = tmp_df.min(axis=1)
@@ -142,6 +145,8 @@ def getTimeChangeColumns(series):
 
             return pd.Series([first_index, last_index, time_diff, time_ratio,
                               first_id_value, last_id_value, first_num_value])
+
+
 
 
 def build_IndexFeatures(combined_train_dat, start_time_column = 'start_time'):
