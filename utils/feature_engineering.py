@@ -155,14 +155,20 @@ def build_sortedData_indexDiff(train_test, dat_new_fea, column_list):
         dat_new_fea['{}_index_diff_1'.format(column)] = train_test['index'].iloc[::-1].diff().fillna(9999999).astype(int)
 
 
-def build_IndexFeatures(train_test, start_time_column = 'start_time'):
+
+def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     '''
     function uses a combined DataFrame of train and test to build
     index/ordder based on different columns.
     '''
     expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value',
                         'first_date_value']
-                        
+
+    if test is not None:
+        train_test = pd.concat([train[expected_columns], test[expected_columns]], axis=0)
+    else:
+        train_test = train[expected_columns]
+
     dat_new_fea = pd.DataFrame()
     dat_new_fea['first_time_index']  = train_test['first_time_value'].argsort() + 1
     dat_new_fea['last_time_index']   = train_test['last_time_value'].argsort() + 1
