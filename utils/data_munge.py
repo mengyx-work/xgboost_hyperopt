@@ -7,8 +7,17 @@ from sklearn.preprocessing import LabelEncoder
 def remove_single_value_columns(train, targe_column=None, test=None):
 
     print 'raw train data dimension: ', train.shape
+
     if test is not None:
         print 'raw test data dimension: ', test.shape
+        if len(test.columns) != len(train.columns) and targe_column is None:
+            print 'test has #columns and train has #columns.'.format(test.shape[1], train.shape[1])
+        test_columns = test.columns.tolist()
+        train_columns = train.columns.tolist()
+        if targe_column is not None:
+            train_columns.remove(targe_column)
+        if train_columns != test_columns:
+            raise ValueError('train and test have different columns!')
 
     single_value_column_names = []
     for col in train.columns:
@@ -19,8 +28,6 @@ def remove_single_value_columns(train, targe_column=None, test=None):
     print 'processed train data dimension: ', train.shape
 
     if test is not None:
-        if test.columns != train.columns and targe_column is not None:
-            print 'test has #columns and train has #columns.'.format(test.shape[1], train.shape[1])
         for col in single_value_column_names:
             if col not in test.columns:
                 print 'warning! column {} does not exist in test data.'.format(col)
