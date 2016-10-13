@@ -162,7 +162,7 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     index/ordder based on different columns.
     '''
     expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value',
-                        'first_date_value']
+                        'first_date_value', 'start_time']
 
     if test is not None:
         train_test = pd.concat([train[expected_columns], test[expected_columns]], axis=0)
@@ -170,10 +170,11 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
         train_test = train[expected_columns]
 
     dat_new_fea = pd.DataFrame()
+    train_test['index']              = train_test.index
+    dat_new_fea['index']             = train_test['index']
     dat_new_fea['first_time_index']  = train_test['first_time_value'].argsort() + 1
     dat_new_fea['last_time_index']   = train_test['last_time_value'].argsort() + 1
     dat_new_fea['index_ratio']       = dat_new_fea['first_time_index'] / dat_new_fea['last_time_index']
-    dat_new_fea['index']             = train_test.index
 
     if start_time_column in train_test.columns:
         dat_new_fea['start_time_diff']          = train_test['start_time'].diff()
@@ -183,9 +184,6 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
 
         ## Bosch approach to generate features
         build_sortedData_indexDiff(train_test, dat_new_fea, ['start_time'])
-        #train_test = train_test.sort_values(by=['start_time', 'index'], ascending=True)
-        #dat_new_fea['start_time_index_diff_0'] = train_test['index'].diff().fillna(9999999).astype(int)
-        #dat_new_fea['start_time_index_diff_1'] = train_test['index'].iloc[::-1].diff().fillna(9999999).astype(int)
     
     dat_new_fea['time_ratio_value_index']    = train_test['time_ratio_value'].argsort() + 1
     dat_new_fea['first_time_value_index']    = train_test['first_time_value'].argsort() + 1
@@ -197,7 +195,8 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     learned from Bosch that sort the data by different interesting columns, 
     the relatively difference between adjacent rows can be useful
     '''
-    build_sortedData_indexDiff(train_test, dat_new_fea, ['first_ratio_value', 'first_time_value', 'last_time_value', 'first_date_value'])
+    build_sortedData_indexDiff(train_test, dat_new_fea, ['time_ratio_value', 'first_time_value', 'last_time_value', 'first_date_value'])
+    dat_new_fea.drop('index', axis=1, inplace=True)
   
     return dat_new_fea
 
