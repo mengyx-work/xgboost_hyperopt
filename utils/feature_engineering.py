@@ -10,6 +10,7 @@ def BasicDate_FeatureEngineering(tmp_train_dat, start_time_column=None):
     encoder.fit(column_names)
     dat_new_fea = pd.DataFrame()
     
+    ## for NaN data, this column will be removed as single-valued column
     if 'L0_S0_D1' in tmp_train_dat.columns:
         dat_new_fea['start_time'] = tmp_train_dat['L0_S0_D1']
         
@@ -198,7 +199,6 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     the relatively difference between adjacent rows can be useful
     '''
     build_sortedData_indexDiff(train_test, dat_new_fea, ['time_ratio_value', 'first_time_value', 'last_time_value', 'first_date_value'])
-    dat_new_fea.drop('index', axis=1, inplace=True)
   
     return dat_new_fea
 
