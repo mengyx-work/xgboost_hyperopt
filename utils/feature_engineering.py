@@ -162,7 +162,9 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     index/ordder based on different columns.
     '''
     expected_columns = ['first_time_value', 'last_time_value', 'time_ratio_value',
-                        'first_date_value', 'start_time']
+                        'first_date_value']
+    if start_time_column in train.columns and start_time_column in test.columns:
+        expected_columns.append(start_time_column)
 
     if test is not None:
         train_test = pd.concat([train[expected_columns], test[expected_columns]], axis=0)
