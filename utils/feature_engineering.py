@@ -180,7 +180,7 @@ def build_IndexFeatures(train, test=None, start_time_column = 'start_time'):
     dat_new_fea['index_ratio']       = dat_new_fea['first_time_index'] / dat_new_fea['last_time_index']
 
     if start_time_column in train_test.columns:
-        dat_new_fea['start_time_diff']          = train_test['start_time'].diff()
+        dat_new_fea['start_time_diff']          = train_test['start_time'].diff().fillna(9999999).astype(float)
         dat_new_fea['start_time_index']         = train_test['start_time'].argsort() + 1
         dat_new_fea['start_time_index_ratio_1'] = dat_new_fea['first_time_index'] / dat_new_fea['index']
         dat_new_fea['start_time_index_ratio_2'] = dat_new_fea['last_time_index'] / dat_new_fea['index']
