@@ -2,31 +2,7 @@ import os, sys, time
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
-
-def create_kfold_index(df, fold_num = 4, dep_var_name = 'dep_var'):
-    valid_index = []
-    train_index = []
-    index_series = df[dep_var_name]
-    index_series = index_series.reindex(np.random.permutation(index_series.index))
-
-    grouped_index = index_series.groupby(index_series)
-
-    for name, group in grouped_index:
-        index_length = int(group.shape[0])
-        if index_length < fold_num:
-            raise ValueError('not enough samples to build {} folds validation'.format(fold_num))
-        index_list = []
-        for i in range(fold_num):
-            index_list.append(1.*i/fold_num*index_length)
-        index_list.append(index_length)
-            
-        single_group_index = group.index.tolist()
-        for i in range(fold_num):
-            single_valid_index = group[index_list[i]:index_list[i+1]].index.tolist()
-            valid_index.append(single_valid_index)      
-            train_index.append([x for x in single_group_index if x not in single_valid_index])
-
-    return train_index, valid_index
+from sklearn.cross_validation import StratifiedKFold
 
 
 
