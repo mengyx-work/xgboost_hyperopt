@@ -13,7 +13,7 @@ def remove_single_value_columns(train, targe_column=None, test=None):
     if test is not None:
         print 'raw test data dimension: ', test.shape
         if len(test.columns) != len(train.columns) and targe_column is None:
-            print 'test has #columns and train has #columns.'.format(test.shape[1], train.shape[1])
+            print 'test has #columns {} and train has #columns {}.'.format(test.shape[1], train.shape[1])
         test_columns = test.columns.tolist()
         train_columns = train.columns.tolist()
         if targe_column is not None:
