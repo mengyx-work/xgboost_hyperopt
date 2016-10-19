@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 
 
+##### Station-based  Features Related #####
 
 def build_column_dict(columns):
     '''
@@ -67,6 +68,50 @@ def build_station_index_features(train, test = None):
     return new_fea
 
 
+##### Categorical Features Related #####
+
+def BasicCat_FeatureEngineering(train_cat):
+    ## feature engineering on the date features
+    encoder = preprocessing.LabelEncoder()
+    column_names = train_cat.columns.tolist()
+    column_names.append('NaN')
+    encoder.fit(column_names)
+    dat_new_fea = pd.DataFrame()
+    dat_new_fea['cat_sum'] = train_cat.sum(axis=1)
+    dat_new_fea['cat_mean'] = train_cat.mean(axis=1)
+    dat_new_fea['cat_nan_count'] = train_cat.isnull().sum(axis=1)
+    dat_new_fea['cat_max'] = train_cat.max(axis=1)
+    dat_new_fea['cat_min'] = train_cat.min(axis=1)
+    dat_new_fea['cat_max_min_diff'] = dat_new_fea['cat_max'] - dat_new_fea['cat_min']
+    dat_new_fea['cat_max_min_ratio'] = dat_new_fea['cat_min'] / dat_new_fea['cat_max']
+
+    dat_new_fea['cat_idxmax'] = train_cat.idxmax(axis=1)
+    dat_new_fea['cat_idxmax'].fillna('NaN', inplace=True)
+    dat_new_fea['cat_idxmax'] = encoder.transform(dat_new_fea['cat_idxmax'])
+    dat_new_fea['cat_idxmin'] = train_cat.idxmin(axis=1)
+    dat_new_fea['cat_idxmin'].fillna('NaN', inplace=True)
+    dat_new_fea['cat_idxmin'] = encoder.transform(dat_new_fea['cat_idxmin'])
+    return dat_new_fea
+
+
+
+def encode_categorical_by_dep_var(train, test, dep_var_column='Response'):
+    for col_name in train.columns:
+        if col_name == dep_var_column:
+            continue
+        dep_var_mean = train[[col_name, dep_var_column]].groupby(col_name).mean()
+    
+        dep_var_dict = {}
+        for level in dep_var_mean.index.tolist():
+            dep_var_dict[level] = dep_var_mean.ix[level, dep_var_column]
+    
+        train[col_name] = train[col_name].replace(dep_var_dict)  
+        test[col_name] = test[col_name].replace(dep_var_dict)  
+
+
+
+
+##### Date Feature Engineerings #####
 
 def BasicDate_FeatureEngineering(tmp_train_dat, start_time_column=None):
     ## feature engineering on the date features
