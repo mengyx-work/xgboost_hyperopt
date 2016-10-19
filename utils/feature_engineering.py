@@ -2,6 +2,72 @@ from sklearn import preprocessing
 import pandas as pd
 import numpy as np
 
+
+
+def build_column_dict(columns):
+    '''
+    function to categorize columns names 
+    by station and line for Bosch project
+    '''
+    station_dict = {}
+    line_dict = {}
+    for col in columns:
+        stationList = col.split('_')[0:2]
+        stationKey = ('_').join(stationList)
+        lineKey = col.split('_')[0]
+        
+        if lineKey not in line_dict:
+            line_dict[lineKey] = [col]
+        else:
+            line_dict[lineKey].append(col)
+                    
+        if stationKey not in station_dict:
+            station_dict[stationKey] = [col]
+        else:
+            station_dict[stationKey].append(col)
+    return station_dict, line_dict
+
+
+def build_station_features(df, col_dict, prefix='dat'):
+    '''
+    Bosch FE function
+    create mean/max/min features based on a column dictionary
+    of columns based on the column/line name
+    '''
+    features = pd.DataFrame()
+    for key, value in col_dict.items():
+        features['{}_{}_{}'.format(prefix, key, 'mean')] = df[value].mean(axis=1)
+        features['{}_{}_{}'.format(prefix, key, 'max')] = df[value].max(axis=1)
+        features['{}_{}_{}'.format(prefix, key, 'min')] = df[value].min(axis=1)
+        features['{}_{}_{}'.format(prefix, key, 'var')] = df[value].var(axis=1)
+    return features
+
+
+def build_station_index_features(train, test = None):
+    '''
+    Bosch station feature engineering
+    Use certain station-based features to build index
+    features from ranking.
+    '''
+    selected_columns = []
+    for col in train.columns:
+        if 'mean' in col or 'var' in col:
+            selected_columns.append(col)
+            
+    if test is not None:
+        train_test = pd.concat([train[selected_columns], test[selected_columns]], axis=0)
+    else:
+        train_test = train[selected_columns]
+        
+    train_test['index'] = train_test.index
+    new_fea = pd.DataFrame()
+    ## function to build index based on the given columns
+    build_sortedData_indexDiff(train_test, new_fea, selected_columns)
+    
+    return new_fea
+
+
+
 def BasicDate_FeatureEngineering(tmp_train_dat, start_time_column=None):
     ## feature engineering on the date features
     encoder = preprocessing.LabelEncoder()
