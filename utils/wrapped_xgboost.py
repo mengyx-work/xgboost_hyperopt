@@ -258,7 +258,7 @@ class xgboost_classifier(object):
         
         self._create_feature_importance_map(self.fea_map_file)
         self.bst.save_model(self.model_file_name)
-        print 'the xgboost fit is finished by using {} seconds, saved into {}'.format((time.time() - start_time), self.model_file_name)
+        print 'the xgboost fit is finished by using {} seconds, saved into {}'.format(round(time.time() - start_time, 0), self.model_file_name)
 
         return self
 
