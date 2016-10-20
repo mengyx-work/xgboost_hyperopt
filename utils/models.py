@@ -181,10 +181,10 @@ class CombinedModel(BaseModel):
         else:
             print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
 
-        #summary_dict = {}
         curr_max_model_index = -1
         model_count = -1
         trained_yaml_file = join(self.model_params['project_path'], self.model_params['models_yaml_file'])
+
         ## loop through all the models in raw model yaml file
         for index, model_dict in models_dict.items():
             start_time = time.time()
@@ -209,7 +209,8 @@ class CombinedModel(BaseModel):
 
             with open(trained_yaml_file, 'w') as yml_stream:
                 yaml.dump(summary_dict, yml_stream, default_flow_style=False)
-            print 'finished training {} model indexed {} combined model using {} seconds; total {} models out of {}'.format(model_dict['model_type'], index, round(time.time() -start_time, 0), model_count, len(models_dict))
+            print 'finished training {} model indexed {} combined model using {} minutes; total {} models out of {}'.format(model_dict['model_type'], index, round((time.time() -start_time)/60, 1), model_count+1, len(models_dict))
+
 
 
 
