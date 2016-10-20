@@ -1,3 +1,5 @@
+## folder to store models
+xgb_model_features
 # yml file
 *.yml
 # text/data file
