@@ -100,6 +100,8 @@ def encode_categorical_by_dep_var(train, test, dep_var_column='Response'):
         if col_name == dep_var_column:
             continue
         dep_var_mean = train[[col_name, dep_var_column]].groupby(col_name).mean()
+        train[col_name] = train[col_name].astype(str)
+        test[col_name]  = test[col_name].astype(str)
     
         dep_var_dict = {}
         for level in dep_var_mean.index.tolist():
