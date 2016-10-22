@@ -96,16 +96,18 @@ def BasicCat_FeatureEngineering(train_cat):
 
 
 def encode_categorical_by_dep_var(train, test, dep_var_column='Response'):
+    train.fillna(999999, inplace=True)
+    test.fillna(999999, inplace=True)
     for col_name in train.columns:
         if col_name == dep_var_column:
             continue
         dep_var_mean = train[[col_name, dep_var_column]].groupby(col_name).mean()
-        train[col_name] = train[col_name].astype(str)
-        test[col_name]  = test[col_name].astype(str)
     
         dep_var_dict = {}
         for level in dep_var_mean.index.tolist():
-            dep_var_dict[level] = dep_var_mean.ix[level, dep_var_column]
+            level_dep_dep_value = dep_var_mean.ix[level, dep_var_column]
+            level_dep_dep_value = round(level_dep_dep_value * 1000, 3)
+            dep_var_dict[level] = level_dep_dep_value 
     
         train[col_name] = train[col_name].replace(dep_var_dict)  
         test[col_name] = test[col_name].replace(dep_var_dict)  
