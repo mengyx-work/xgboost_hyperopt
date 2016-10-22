@@ -29,6 +29,7 @@ def build_column_dict(columns):
     return station_dict, line_dict
 
 
+
 def build_station_features(df, col_dict, prefix='dat'):
     '''
     Bosch FE function
@@ -42,6 +43,7 @@ def build_station_features(df, col_dict, prefix='dat'):
         features['{}_{}_{}'.format(prefix, key, 'min')] = df[value].min(axis=1)
         features['{}_{}_{}'.format(prefix, key, 'var')] = df[value].var(axis=1)
     return features
+
 
 
 def build_station_index_features(train, test = None):
@@ -95,9 +97,12 @@ def BasicCat_FeatureEngineering(train_cat):
 
 
 
-def encode_categorical_by_dep_var(train, test, dep_var_column='Response'):
-    train.fillna(999999, inplace=True)
-    test.fillna(999999, inplace=True)
+def encode_categorical_by_dep_var(train, test, dep_var_column='Response', fill_missing=False):
+
+    if fill_missing:
+        train.fillna(999999, inplace=True)
+        test.fillna(999999, inplace=True)
+
     for col_name in train.columns:
         if col_name == dep_var_column:
             continue
@@ -111,7 +116,6 @@ def encode_categorical_by_dep_var(train, test, dep_var_column='Response'):
     
         train[col_name] = train[col_name].replace(dep_var_dict)  
         test[col_name] = test[col_name].replace(dep_var_dict)  
-
 
 
 
