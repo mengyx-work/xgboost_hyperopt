@@ -12,8 +12,11 @@ dep_var_name = 'Response'
 idx_col_name = 'Id'
 
 start_time = time.time()
-data_path = '/home/ymm/kaggle/bosch_data/bosch_FE_full_data_xgb'
-train_file_name = 'FE_raw_train_num_dat_data.csv'
+data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
+csv_files = ['bosch_train_categorical_features.csv',
+                   'bosch_train_date_features.csv',
+                   'bosch_train_numerical_features.csv',
+                   'bosch_train_station_features.csv']
 
 folder_name = 'xgb_model_features'
 model_folder = join('./', folder_name)
@@ -37,24 +40,20 @@ def read_data_from_csv_list(csv_files, data_path, skiprowsList, idx_col_name):
 
     return combined_train
 
-data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
-csv_files = ['bosch_train_categorical_features.csv', 'bosch_train_numerical_features.csv'] 
-
 ## probe the data
 #idx_train =  pd.read_csv(join(data_path, train_file_name), usecols=[idx_col_name], index_col=idx_col_name)
 #print 'reading the entire data taking {} seconds, the training data shape is: {}'.format(round(time.time()-start_time, 0), idx_train.shape)
 #tot_row_num = int(idx_train.shape[0])
 
 tot_row_num = 1183747
-fold_num = 6
+fold_num = 5
 idxList = [int(1.*i/fold_num*tot_row_num) for i in range(0, fold_num+1)]
 
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 501
-params["num_round"]                = 10
+params["num_round"]                = 3001
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
