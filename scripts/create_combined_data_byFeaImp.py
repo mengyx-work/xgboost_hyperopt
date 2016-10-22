@@ -48,7 +48,7 @@ def combine_data_byColumns(data_path, csv_files, selected_features, idx_col_name
         if not isfile(join(data_path, test_csv)):
             raise ValueError('fail to locate the test data {}'.format(join(data_path, test_csv)))
 
-        train_columns = pd.read_csv(join(data_path, train_csv), index_col=idx_col_name, nrows=1)
+        train_columns = pd.read_csv(join(data_path, train_csv), index_col=False, nrows=1)
         selected_columns = [col for col in train_columns if col in selected_features]
         tmp_train = pd.read_csv(join(data_path, train_csv), index_col=idx_col_name, usecols=selected_columns)
 
@@ -64,7 +64,8 @@ def combine_data_byColumns(data_path, csv_files, selected_features, idx_col_name
             test = tmp_test
         else:
             test = pd.concat([test, tmp_test], axis=1)
-        print 'finish loading the data {}, {} with shape {}, {} using {} minutes'.format(train_csv, test_csv, train_csv.shape, test_csv.shape, round((time.time()-start_time)/60, 2))
+        print 'finish loading the data {}, {} with shape {}, {}'.format(train_csv, test_csv, tmp_train.shape, tmp_test.shape)
+        print 'train, test shape: {}, {}, using {} minutes'.format(train.shape, test.shape, round((time.time()-start_time)/60, 2))
 
     return train, test
 
@@ -82,6 +83,7 @@ csv_files = ['bosch_train_categorical_features.csv', 'bosch_train_date_features.
 combined_feature_importance = combine_feature_importance_files(feature_data_path)
 selected_features = combined_feature_importance.index.tolist()
 selected_features.append(dep_var_name)
+selected_features.append(idx_col_name)
 
 train, test = combine_data_byColumns(data_path, csv_files, selected_features, idx_col_name, dep_var_name) 
 start_time = time.time()
