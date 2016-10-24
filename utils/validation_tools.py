@@ -13,7 +13,7 @@ def split_trainData_byTime(data, time_column_name, to_subsample=False, nrows=500
     tmp_data = data.copy()
     ## to subsample the data
     if to_subsample:
-        seletected_index = random.sample(tmp_data.index.tolist(), tot_sample_num)
+        seletected_index = random.sample(tmp_data.index.tolist(), nrows)
         tmp_data = tmp_data.ix[seletected_index]
 
     tmp_data.loc[:, time_column_name]= pd.to_datetime(tmp_data.loc[:, time_column_name], format='%d%b%Y')
