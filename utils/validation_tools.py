@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import os, sys, time
+import os, sys, time, random
 from os.path import isfile, join
 from random import shuffle
 from sklearn.metrics import matthews_corrcoef
@@ -11,6 +11,7 @@ import itertools
 def split_trainData_byTime(data, time_column_name, to_subsample=False, nrows=50000, valid_frac=0.2):
     ## use a separate data to create new train/test
     tmp_data = data.copy()
+    ## to subsample the data
     if to_subsample:
         seletected_index = random.sample(tmp_data.index.tolist(), tot_sample_num)
         tmp_data = tmp_data.ix[seletected_index]
@@ -19,6 +20,7 @@ def split_trainData_byTime(data, time_column_name, to_subsample=False, nrows=500
     tmp_data = tmp_data.set_index(time_column_name).sort_index()
     split_index = int((1.- valid_frac) * tmp_data.shape[0])
     return tmp_data.iloc[:split_index, :], tmp_data.iloc[split_index:, :]
+
 
 
 def grid_search_by_fixedData(train, test, dep_var_name, model_class, eval_func, param_dict, result_file='grid_search_byFixedData_results.csv', is_xgb_model=False):
