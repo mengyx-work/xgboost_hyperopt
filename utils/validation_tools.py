@@ -8,6 +8,55 @@ from sklearn.cross_validation import StratifiedKFold
 import itertools
 
 
+def grid_search_by_fixedData(train, test, dep_var_name, model_class, eval_func, param_dict, result_file='grid_search_byFixedData_results.csv', is_xgb_model=False):
+    '''
+    '''
+    ## flatten the parameter grid
+    params_list = list(itertools.product(*param_dict.values()))
+    columns_names = param_dict.keys() + ['score']
+    df = pd.DataFrame(columns=columns_names)
+    df.to_csv(result_file)
+    row_counter = 0
+
+    start_time = time.time()
+    grid_point_counter = -1
+
+    ## loop through the grid points  
+    for param in params_list:
+        grid_point_counter += 1
+        
+        model_params = {}
+        for value, key in zip(param, param_dict.keys()):
+            model_params[key] = value
+            
+        ## initiate new model from model_class
+        if not is_xgb_model:
+            model = model_class(model_params)
+        else:
+            model = model_class(label_name = dep_var_name, params = model_params, model_file='grid_search_xgb_model_{}'.format(grid_point_counter))
+
+        model.fit(train, dep_var_name)
+        preds = model.predict(test)
+        result = eval_func(test[dep_var_name].values, preds)
+
+        ## fill up the results DataFrame
+        row_content = []
+        for columns_name in columns_names[:-1]:
+            row_content.append(model_params[columns_name])
+        row_content.append(result)
+
+        ## save content into csv file
+        df = pd.read_csv(result_file, index_col=0)
+        df.loc[row_counter] = row_content
+        df.to_csv(result_file)
+        row_counter += 1
+
+        if row_counter % 10 == 0:
+            print '{} grid points are finished using {} minutes'.format(row_counter, round((time.time() - start_time)/60, 0))
+        
+
+
+
 def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func, param_dict, fold_num=3, result_file='grid_search_results.csv', is_xgb_model=False):
     '''
     function to conduct grid search on models using metrics give by eval_func
@@ -54,7 +103,7 @@ def grid_search_cross_validate_model(train, dep_var_name, model_class, eval_func
         row_counter += 1
 
         if row_counter % 10 == 0:
-            print '{} grid points are finished using {} seconds'.format(row_counter, round((time.time() - start_time), 0))
+            print '{} grid points are finished using {} minutes'.format(row_counter, round((time.time() - start_time)/60, 1))
         
 
 def combine_tuning_params(const_param_dict, tuning_param_dict):
