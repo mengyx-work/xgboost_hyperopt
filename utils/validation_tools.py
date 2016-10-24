@@ -8,6 +8,19 @@ from sklearn.cross_validation import StratifiedKFold
 import itertools
 
 
+def split_trainData_byTime(data, time_column_name, to_subsample=False, nrows=50000, valid_frac=0.2):
+    ## use a separate data to create new train/test
+    tmp_data = data.copy()
+    if to_subsample:
+        seletected_index = random.sample(tmp_data.index.tolist(), tot_sample_num)
+        tmp_data = tmp_data.ix[seletected_index]
+
+    tmp_data.loc[:, time_column_name]= pd.to_datetime(tmp_data.loc[:, time_column_name], format='%d%b%Y')
+    tmp_data = tmp_data.set_index(time_column_name).sort_index()
+    split_index = int((1.- valid_frac) * tmp_data.shape[0])
+    return tmp_data.iloc[:split_index, :], tmp_data.iloc[split_index:, :]
+
+
 def grid_search_by_fixedData(train, test, dep_var_name, model_class, eval_func, param_dict, result_file='grid_search_byFixedData_results.csv', is_xgb_model=False):
     '''
     '''
