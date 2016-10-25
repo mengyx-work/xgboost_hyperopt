@@ -8,6 +8,42 @@ from sklearn.cross_validation import StratifiedKFold
 import itertools
 
 
+
+
+def get_combinedFeaImp_fromProj(data_path, fea_name='feature', thres_name = None, thres = 10):
+    '''
+    function to collect feature importances
+    from a combined model project/folder
+    '''
+    csv_files = [f for f in os.listdir(data_path) if '.csv' in f]
+    fea_imp = None
+    file_counter = -1
+    score_columns = []
+    norm_score_columns = []
+    
+    for file_name in csv_files:
+        data = pd.read_csv(join(data_path, file_name), index_col=0)
+        
+        if thres_name is not None:
+            data = data.loc[data[thres_name] > thres]
+            
+        data = data.set_index(fea_name)
+        print data.shape
+        file_counter += 1
+        data.columns = ['{}_{}'.format(column, file_counter) for column in data.columns]
+        score_columns.append('{}_{}'.format('fscore', file_counter))
+        norm_score_columns.append('{}_{}'.format('norm_fscore', file_counter))
+        if fea_imp is None:
+            fea_imp = data
+        else:
+            fea_imp = pd.merge(fea_imp, data, how='outer', left_index=True, right_index=True)
+    
+    fea_imp['fscore_sum'] = fea_imp[score_columns].sum(axis=1)
+    fea_imp['norm_fscore_sum'] = fea_imp[norm_score_columns].sum(axis=1)
+    return fea_imp
+
+
+
 def split_trainData_byTime(data, time_column_name, to_subsample=False, nrows=50000, valid_frac=0.2):
     ## use a separate data to create new train/test
     tmp_data = data.copy()
