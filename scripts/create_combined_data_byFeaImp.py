@@ -2,35 +2,9 @@ import os, sys, time
 import pandas as pd
 import numpy as np
 from os.path import join, isfile
+sys.path.append('/home/ymm/kaggle/xgboost_hyperopt')
+from utils.validation_tools import get_combinedFeaImp_fromProj 
 
-
-def combine_feature_importance_files(data_path, fea_name='feature', thres_name = None, thres = 10):
-    csv_files = [f for f in os.listdir(data_path) if '.csv' in f]
-    fea_imp = None
-    file_counter = -1
-    score_columns = []
-    norm_score_columns = []
-    
-    for file_name in csv_files:
-        data = pd.read_csv(join(data_path, file_name), index_col=0)
-        
-        if thres_name is not None:
-            data = data.loc[data[thres_name] > thres]
-            
-        data = data.set_index(fea_name)
-        print data.shape
-        file_counter += 1
-        data.columns = ['{}_{}'.format(column, file_counter) for column in data.columns]
-        score_columns.append('{}_{}'.format('fscore', file_counter))
-        norm_score_columns.append('{}_{}'.format('norm_fscore', file_counter))
-        if fea_imp is None:
-            fea_imp = data
-        else:
-            fea_imp = pd.merge(fea_imp, data, how='outer', left_index=True, right_index=True)
-    
-    fea_imp['fscore_sum'] = fea_imp[score_columns].sum(axis=1)
-    fea_imp['norm_fscore_sum'] = fea_imp[norm_score_columns].sum(axis=1)
-    return fea_imp
 
 
 def combine_data_byColumns(data_path, csv_files, selected_features, idx_col_name, dep_var_name):
@@ -80,7 +54,7 @@ data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
 csv_files = ['bosch_train_categorical_features.csv', 'bosch_train_date_features.csv',
              'bosch_train_numerical_features.csv', 'bosch_train_station_features.csv']
 
-combined_feature_importance = combine_feature_importance_files(feature_data_path)
+combined_feature_importance = get_combinedFeaImp_fromProj(feature_data_path)
 selected_features = combined_feature_importance.index.tolist()
 selected_features.append(dep_var_name)
 selected_features.append(idx_col_name)
