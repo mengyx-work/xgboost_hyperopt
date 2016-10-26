@@ -61,11 +61,12 @@ def generate_models_params_dict(models, const_params, tuning_params, model_type,
         models[model_index] = model_dict
 
 
+#'''
 params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 500
+params["num_round"]                = 501
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
@@ -78,7 +79,7 @@ params['use_weights']              = True
 #params['use_scale_pos_weight']     = True
 params["val"]                      = False
 
-#'''
+'''
 xgb_const_params = params
 list_param_dict = {}
 #list_param_dict['num_round'] = [101, 201, 40l, 601]
@@ -87,21 +88,21 @@ list_param_dict['max_depth'] = [2, 3, 4, 5, 6, 8, 15]
 list_param_dict['colsample_bytree'] = [1., 0.8, 0.6, 0.4, 0.2]
 #list_param_dict['subsample'] = [1., 0.8, 0.6]
 generate_models_params_dict(models, xgb_const_params, list_param_dict, 'Xgboost', model_index)
-#'''
-
-
 '''
+
+
+#'''
 ## manually add every model into the combined model
 tmp_params = params.copy()
-tmp_params['max_depth'] = 14
-tmp_params['num_round'] = 601
+#tmp_params['max_depth'] = 14
+#tmp_params['num_round'] = 601
 model_index += 1
 model_dict = {}
 model_dict['model_type'] = 'Xgboost'
 model_dict['model_params'] = tmp_params
 models[model_index] = model_dict
 
-
+'''
 tmp_params = params.copy()
 tmp_params['max_depth'] = 12
 tmp_params['num_round'] = 501
@@ -116,14 +117,26 @@ models[model_index] = model_dict
 '''
 ## RandomForest models
 rf_params = {'random_state' : 9999, 'n_estimators' : 2000, 'max_depth' : 7, 'criterion' : 'gini', 'n_jobs' : -1}
+
 model_index += 1
 model_dict = {}
 model_dict['model_type'] = 'RandomForest'
 model_dict['model_params'] = rf_params
 models[model_index] = model_dict
+'''
+
+'''
+rf_const_params = rf_params 
+list_param_dict = {}
+list_param_dict['n_estimators'] = [500, 1000, 2000, 3000]
+list_param_dict['max_depth'] = [5, 7, 10, 15, 20, 25]
+generate_models_params_dict(models, rf_const_params, list_param_dict, 'RandomForest', model_index)
+'''
 
 ## ExtraTree models
 et_params = {'random_state' : 9999, 'n_estimators' : 200, 'max_depth' : 18, 'criterion' : 'gini', 'n_jobs' : -1}
+
+'''
 model_index += 1
 model_dict = {}
 model_dict['model_type'] = 'ExtraTree'
@@ -131,6 +144,13 @@ model_dict['model_params'] = et_params
 models[model_index] = model_dict
 '''
 
+#'''
+et_const_params = et_params 
+list_param_dict = {}
+list_param_dict['n_estimators'] = [200, 500, 1000, 3000, 5000]
+list_param_dict['max_depth'] = [3, 5, 7, 10, 15, 20, 25]
+generate_models_params_dict(models, et_const_params, list_param_dict, 'ExtraTree', model_index)
+#'''
 
 
 with open(os.path.join(project_path, models_yaml_file), 'w') as yml_stream:
