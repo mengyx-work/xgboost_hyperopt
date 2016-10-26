@@ -119,9 +119,9 @@ def encode_categorical_by_dep_var(train, test=None, dep_var_column='Response', f
         ## collect all the dep_var_dict for different columns
         encode_column_dict[col_name] = dep_var_dict
 
-        train.loc[:, col_name] = train[col_name].replace(dep_var_dict).values 
+        train.loc[:, col_name] = train[col_name].replace(dep_var_dict)
         if test is not None:
-            test.loc[:, col_name] = test[col_name].replace(dep_var_dict).values 
+            test.loc[:, col_name] = test[col_name].replace(dep_var_dict)
 
     return encode_column_dict
 
