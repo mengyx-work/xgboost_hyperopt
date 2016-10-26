@@ -13,7 +13,7 @@ from utils.validation_tools import score_MCC, MCC, create_validation_index, cros
 from utils.validation_tools import combine_prediction_results_for_combined_models
 
 dep_var_name = 'Response'
-project_name = 'processed_data_xgb'
+project_name = 'processed_subsample_50k_data_xgb'
 
 start_time = time.time()
 data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
@@ -22,9 +22,10 @@ train_file_name = 'bosch_combined_train_data.csv'
 
 ## subsample training data
 tot_row_num = 1183747
-num_rows = 100000
+num_rows = 50000
 skip = sorted(random.sample(xrange(1,tot_row_num + 1),tot_row_num - num_rows))
 train = pd.read_csv(join(data_path, train_file_name), index_col='Id', skiprows=skip)
+print 'shape of training data is {}'.format(train.shape)
 
 ## load the full training data
 #train = pd.read_csv(join(data_path, train_file_name), index_col='Id')
@@ -44,6 +45,6 @@ combined_model_params['raw_models_yaml_path']   = raw_models_yaml_path
 
 ## build the combined model
 combined_model = CombinedModel(combined_model_params)
-combined_model.cross_vlidate_fit(train, dep_var_name, fold_num=2)
-print '{} finish training and prediction on data bin: {}, using {} seconds'.format(print_colors.GREEN, project_name, round(time.time() - start_time, 0))
+combined_model.cross_vlidate_fit(train, dep_var_name, fold_num=3)
+print '{} finish training and prediction on data bin: {}, using {} minutes'.format(print_colors.GREEN, project_name, round((time.time() - start_time)/60, 1))
 
