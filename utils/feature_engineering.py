@@ -100,9 +100,9 @@ def BasicCat_FeatureEngineering(train_cat):
 def encode_categorical_by_dep_var(train, test=None, dep_var_column='Response', fill_missing=False, fill_missing_value = 999999):
 
     if fill_missing:
-        train = train.fillna(fill_missing_value)
+        train.fillna(fill_missing_value, inplace = True)
         if test is not None:
-            test = test.fillna(fill_missing_value)
+            test.fillna(fill_missing_value, inplace = True)
 
     encode_column_dict = {}
     for col_name in train.columns:
@@ -119,9 +119,9 @@ def encode_categorical_by_dep_var(train, test=None, dep_var_column='Response', f
         ## collect all the dep_var_dict for different columns
         encode_column_dict[col_name] = dep_var_dict
 
-        train.loc[:, col_name] = train[col_name].replace(dep_var_dict)
+        train[col_name] = train[col_name].replace(dep_var_dict)
         if test is not None:
-            test.loc[:, col_name] = test[col_name].replace(dep_var_dict)
+            test[col_name] = test[col_name].replace(dep_var_dict)
 
     return encode_column_dict
 
