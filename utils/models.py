@@ -141,7 +141,6 @@ class CombinedModel(BaseModel):
             kfold_test_label = train_label.iloc[test]
             ## one model_dict for each trained model
             tmp_model_dict = model_dict.copy()
-            curr_max_model_index += 1
             if tmp_model_dict['model_type'] != 'Xgboost':
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds.pkl'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
@@ -162,6 +161,7 @@ class CombinedModel(BaseModel):
             tmp_model_dict['model_threshold']   = threshold
             tmp_model_dict['result']            = result
             summary_dict[str(curr_max_model_index)] = tmp_model_dict
+            curr_max_model_index += 1
             results.append(result)
             thresholds.append(threshold)
 
@@ -181,18 +181,19 @@ class CombinedModel(BaseModel):
         else:
             print 'the predict_path {} already exits, overwrite the contents...'.format(self.model_params['project_path'])
 
-        curr_max_model_index = -1
+        curr_max_model_index = 0
         model_count = -1
         trained_yaml_file = join(self.model_params['project_path'], self.model_params['models_yaml_file'])
 
         ## loop through all the models in raw model yaml file
         for index, model_dict in models_dict.items():
             start_time = time.time()
-            curr_max_model_index += 1
             model_count += 1
             ## cross validate the model with training data
             results, thresholds, tmp_summary_dict = self.build_cross_validate_models(train, self.dep_var_name, model_dict, self.model_params['project_path'], curr_max_model_index, fold_num)
             curr_max_model_index = max([int(i) for i in tmp_summary_dict.keys()])
+            curr_max_model_index += 1
+
             ## try to append tmp_summary_dict to yaml file of trained models
             if model_count == 0:
                 if isfile(trained_yaml_file):
