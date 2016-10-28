@@ -217,9 +217,11 @@ class CombinedModel(BaseModel):
 
     def fit(self, train, dep_var_name, append_models=False):
 
-        ## store the dep_var_nme on the combined model.
-        ## because the Xgboost model can not be directly
-        ## pickled, only a binary booster is saved.
+        '''fit function for combined model
+        store the dep_var_nme with the combined model. 
+        because the Xgboost model can not be directly, 
+        pickled, only a binary booster is saved.
+        '''
 
         self.dep_var_name = dep_var_name
 
