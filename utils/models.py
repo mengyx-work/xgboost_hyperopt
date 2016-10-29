@@ -304,9 +304,11 @@ class CombinedModel(BaseModel):
             models_dict = yaml.load(yml_stream)
 
         pred_df = pd.DataFrame()
+        col_index_names = []
        
         for index, model_dict in models_dict.items():
             model_pickle_file = model_dict['model_file']
+            col_index_names.append(str(index))
 
             if model_dict['model_type'] != 'Xgboost':
                 model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
@@ -358,8 +360,9 @@ class CombinedModel(BaseModel):
         else: 
             ## aggregate on each row and return the sum
             pred_df.index = data.index
-            result = pred_df.sum(axis=1)
-            return result
+            pred_df.columns = col_index_names
+            #result = pred_df.sum(axis=1)
+            return pred_df
 
 
 
