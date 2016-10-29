@@ -47,10 +47,8 @@ def build_station_features(df, col_dict, prefix='dat'):
 
 
 def build_station_index_features(train, test = None):
-    '''
-    Bosch station feature engineering
-    Use certain station-based features to build index
-    features from ranking.
+    '''Bosch station feature engineering
+    Use certain station-based features to build index features from ranking.
     '''
     selected_columns = []
     for col in train.columns:
@@ -65,7 +63,7 @@ def build_station_index_features(train, test = None):
     train_test['index'] = train_test.index
     new_fea = pd.DataFrame()
     ## function to build index based on the given columns
-    build_sortedData_indexDiff(train_test, new_fea, selected_columns)
+    build_sortedData_indexDiff(train_test, new_fea, selected_columns, index_col_name='index')
     
     return new_fea
 
@@ -276,11 +274,12 @@ def getTimeChangeColumns(series):
 
 
 
-def build_sortedData_indexDiff(train_test, dat_new_fea, column_list):
+def build_sortedData_indexDiff(train_test, new_fea, column_list, index_col_name='index'):
+    #new_fea = pd.DataFrame(index=train_test.index)
     for column in column_list:
-        train_test = train_test.sort_values(by=[column, 'index'], ascending=True)
-        dat_new_fea['{}_index_diff_0'.format(column)] = train_test['index'].diff().fillna(9999999).astype(int)
-        dat_new_fea['{}_index_diff_1'.format(column)] = train_test['index'].iloc[::-1].diff().fillna(9999999).astype(int)
+        train_test = train_test.sort_values(by=[column, index_col_name], ascending=True)
+        new_fea['{}_index_diff_0'.format(column)] = train_test[index_col_name].diff().fillna(9999999).astype(int)
+        new_fea['{}_index_diff_1'.format(column)] = train_test[index_col_name].iloc[::-1].diff().fillna(9999999).astype(int)
 
 
 
