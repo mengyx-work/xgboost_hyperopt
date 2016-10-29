@@ -274,6 +274,13 @@ def getTimeChangeColumns(series):
 
 
 
+def build_sortedData_rowDiff(train_test, new_fea, sort_col_list, diff_col_name): 
+    train_test = train_test.sort_values(by=sort_col_list, ascending=True)
+    new_fea['{}_sorted_{}_diff_0'.format('_'.join(sort_col_list), diff_col_name)] = train_test[diff_col_name].diff().fillna(9999999).astype(int)
+    new_fea['{}_sorted_{}_diff_1'.format('_'.join(sort_col_list), diff_col_name)] = train_test[diff_col_name].iloc[::-1].diff().fillna(9999999).astype(int)
+
+
+
 def build_sortedData_indexDiff(train_test, new_fea, column_list, index_col_name='index'):
     #new_fea = pd.DataFrame(index=train_test.index)
     for column in column_list:
