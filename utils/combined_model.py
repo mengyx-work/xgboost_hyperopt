@@ -15,6 +15,9 @@ from models import BaseModel
 
 
 class CombinedModel(BaseModel):
+    
+    ## dict key name for the xgboost binary file 
+    xgb_binary_file_key = 'xgb_binary_file_name'
 
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
