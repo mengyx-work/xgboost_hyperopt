@@ -5,7 +5,8 @@ from os.path import join, isfile
 
 fea_data_path = '/home/ymm/kaggle/bosch/full_data_FE_cross_fit_xgb_models/final_xgb_models/combined_xgb_models_038'
 data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
-train_file_name = 'bosch_combined_train_data.csv'
+#train_file_name = 'bosch_combined_train_data.csv'
+test_file_name = 'bosch_combined_test_data.csv'
 index_col_name = 'Id'
 dep_var_name = 'Response'
 
@@ -41,9 +42,16 @@ def combine_feature_importance_files(data_path, fea_name='feature', thres_name =
 combined_imp = combine_feature_importance_files(fea_data_path)
 print 'the shape of combined feature set is {}'.format(combined_imp.shape)
 selected_features = combined_imp[combined_imp.isnull().sum(axis=1) == 0].index.tolist()
+print 'the number of selected feature is {}'.format(len(selected_features))
 selected_features.append(index_col_name)
 selected_features.append(dep_var_name)
 
-train = pd.read_csv(join(data_path, train_file_name), index_col=index_col_name, usecols=selected_features)
-train.to_csv('./selected_combined_train.csv')
+test_selected_features = selected_features[:]
+test_selected_features.remove(dep_var_name)
+
+#train = pd.read_csv(join(data_path, train_file_name), index_col=index_col_name, usecols=selected_features)
+#train.to_csv('./selected_combined_train.csv')
+
+test = pd.read_csv(join(data_path, test_file_name), index_col=index_col_name, usecols=test_selected_features)
+test.to_csv('./selected_combined_test.csv')
 
