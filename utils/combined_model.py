@@ -13,10 +13,8 @@ import numpy as np
 from wrapped_xgboost import xgboost_classifier
 from models import BaseModel
 
-class CombinedModel(BaseModel):
 
-    ## dict key for the xgboost binary file 
-    #xgb_binary_file_key = 'xgb_binary_file_name'
+class CombinedModel(BaseModel):
 
     def __init__(self, model_params):
         super(BaseModel, self).__init__()
@@ -290,20 +288,23 @@ class CombinedModel(BaseModel):
         return tmp_scores
 
 
+    def get_MCC_results_fromStackedBoschModel(self, data, dep_var_name, res_col_name='res'):
+        res_df = self.stacking_model_result(data, dep_var_name, res_col_name)
+        res_df[dep_var_name] = data[dep_var_name]
+        return self.mcc_eval_func(res_df[dep_var_name], res_df[res_col_name])
 
-    def stacking_model_prep(self, data, dep_var_name=None):
+
+
+    def stacking_model_result(self, data, dep_var_name, res_col_name='res'):
 
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
 
         stacked_df = pd.DataFrame(index=data.index)
-        stacked_df['pred'] = np.nan
+        stacked_df[res_col_name] = np.nan
 
-        if dep_var_name is not None:
+        if dep_var_name in data.columns:
             tmp_data = data.drop(dep_var_name, axis=1)
-        else:
-            print 'warning, no label column removal in predict...'
-            tmp_data = data
       
         for index, model_dict in models_dict.items():
             model_pickle_file = model_dict['model_file']
@@ -318,9 +319,9 @@ class CombinedModel(BaseModel):
             stacking_dict = model_dict['stacking_dict']
             train_index = pd.read_csv(os.path.join(self.model_params['project_path'], stacking_dict['training_index_file']), index_col=stacking_dict['index_col_name'])
             predict_index = data.index.difference(train_index.index)
-            if not all(stacked_df.ix[predict_index, 'pred'].isnull()):
+            if not all(stacked_df.ix[predict_index, res_col_name].isnull()):
                 raise ValueError('some elements are already predicted in stacking models')
-            stacked_df.ix[predict_index, 'pred'] = model.predict(tmp_data.ix[predict_index]) 
+            stacked_df.ix[predict_index, res_col_name] = model.predict(tmp_data.ix[predict_index]) 
 
         return stacked_df
 
