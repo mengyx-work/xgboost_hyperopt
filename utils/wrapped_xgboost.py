@@ -304,10 +304,13 @@ class xgboost_classifier(object):
 
 
 
-    def predict(self, test = None):
+    def predict(self, test=None, dep_var_name=None):
 
         if test is None:
             raise ValueError('test data is not defined.')
+	
+	if dep_var_name is not None:
+	  self.label_name = dep_var_name
 
         ## test data may not contain the label_name column
         if hasattr(self, 'label_name') and self.label_name is not None and self.label_name in test.columns:
@@ -317,7 +320,7 @@ class xgboost_classifier(object):
             test_data = test.drop(self.label_name, axis=1)
             dtest = xgb.DMatrix(np.array(test_data), label = np.array(test_labels), missing = np.NaN)
         else:
-	    print 'in the prediction step, dep_var_name is not provided....'
+	    print 'warning! in the prediction step, dep_var_name is not provided....'
             dtest = xgb.DMatrix(np.array(test), missing = np.NaN)
 
         if hasattr(self, 'best_iters') and self.best_iters is not None:
