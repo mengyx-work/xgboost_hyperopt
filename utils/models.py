@@ -42,8 +42,7 @@ class CombinedModel(BaseModel):
     
     @staticmethod
     def _initiate_model_by_type(model_type, model_params):
-        '''
-        helper function to initiate and return
+        ''' internal helper function to initiate and return
         proper model based on the 'model_type'
         '''
         if model_type == 'ExtraTree':
@@ -141,6 +140,7 @@ class CombinedModel(BaseModel):
             kfold_test_label = train_label.iloc[test]
             ## one model_dict for each trained model
             tmp_model_dict = model_dict.copy()
+            stacking_dict = {}
             if tmp_model_dict['model_type'] != 'Xgboost':
                 model_pickle_file = 'combinedModel_indexed_{}_{}_model_{}_folds.pkl'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
                 tmp_model_dict['model_file'] = model_pickle_file
@@ -156,10 +156,18 @@ class CombinedModel(BaseModel):
                 model = cls._initiate_model_by_type(tmp_model_dict['model_type'], tmp_model_dict['model_params'])
                 model.fit(kfold_train, dep_var_name) 
  
+            ## stacking models preparation
+            index_df = pd.DataFrame(index=kfold_train.index)
+            training_index_file = 'combinedModel_indexed_{}_{}_model_{}_folds_training_index.csv'.format(curr_max_model_index, tmp_model_dict['model_type'], fold_num)
+            index_df.to_csv(os.path.join(project_path, training_index_file))
+            stacking_dict['training_index_file'] = training_index_file
+            stacking_dict['index_col_name'] = index_df.index.name
+
             scores = model.predict(kfold_test)
             result, threshold = cls.mcc_eval_func(kfold_test_label, scores)
             tmp_model_dict['model_threshold']   = threshold
             tmp_model_dict['result']            = result
+            tmp_model_dict['stacking_dict']     = stacking_dict
             summary_dict[str(curr_max_model_index)] = tmp_model_dict
             curr_max_model_index += 1
             results.append(result)
@@ -294,17 +302,57 @@ class CombinedModel(BaseModel):
 
 
 
-    def predict(self, data, score_conversion_type = 'B'):
-        '''
-        Prediction results from each model is one column of returned DataFrame
-        If data contains the column with 'dep_var_name', this functions create 
-        an additioanl column of original 'dep_var_name'
+    def stacking_model_prep(self, data, dep_var_name=None):
+
+        with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'r') as yml_stream:
+            models_dict = yaml.load(yml_stream)
+
+        stacked_df = pd.DataFrame(index=data.index)
+        stacked_df['pred'] = np.nan
+
+        if dep_var_name is not None:
+            tmp_data = data.drop(dep_var_name, axis=1)
+        else:
+            print 'warning, no label column removal in predict...'
+            tmp_data = data
+      
+        for index, model_dict in models_dict.items():
+            model_pickle_file = model_dict['model_file']
+
+            if model_dict['model_type'] != 'Xgboost':
+                model = pickle.load(open(os.path.join(self.model_params['project_path'], model_pickle_file), 'rb'))
+            else:
+                ## initiate the model without specifying the dep_var_name
+                model = xgboost_classifier()
+                model.load_model_from_file(os.path.join(self.model_params['project_path'], model_pickle_file))
+                
+            stacking_dict = model_dict['stacking_dict']
+            train_index = pd.read_csv(os.path.join(self.model_params['project_path'], stacking_dict['training_index_file']), index_col=stacking_dict['index_col_name'])
+            predict_index = data.index.difference(train_index.index)
+            if not all(stacked_df.ix[predict_index, 'pred'].isnull()):
+                raise ValueError('some elements are already predicted in stacking models')
+            stacked_df.ix[predict_index, 'pred'] = model.predict(tmp_data.ix[predict_index]) 
+
+        return stacked_df
+
+
+    def predict(self, data, score_conversion_type='B', dep_var_name=None):
+        '''predict function for combined model
+        Results from each model is one column of returned DataFrame
+        If data contains the column with 'dep_var_name', this function creates 
+        new DataFrame without 'dep_var_name' column
         '''
         with open(os.path.join(self.model_params['project_path'], self.model_params['models_yaml_file']), 'r') as yml_stream:
             models_dict = yaml.load(yml_stream)
 
         pred_df = pd.DataFrame()
         col_index_names = []
+
+        if dep_var_name is not None:
+            tmp_data = data.drop(dep_var_name, axis=1)
+        else:
+            print 'warning, no label column removal in predict...'
+            tmp_data = data
        
         for index, model_dict in models_dict.items():
             model_pickle_file = model_dict['model_file']
@@ -319,7 +367,7 @@ class CombinedModel(BaseModel):
                 
             ## create one columns of result for one model
             column_name = 'model_{}_index_{}'.format(model_dict['model_type'], index)
-            scores = model.predict(data) 
+            scores = model.predict(tmp_data) 
 
             if score_conversion_type =='A':
                 ## scores conversion type A:
