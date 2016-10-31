@@ -14,9 +14,10 @@ idx_col_name = 'Id'
 start_time = time.time()
 data_path = '/home/ymm/kaggle/bosch_data/bosch_processed_data'
 csv_files = ['bosch_train_categorical_features.csv',
-                   'bosch_train_date_features.csv',
-                   'bosch_train_numerical_features.csv',
-                   'bosch_train_station_features.csv']
+            'bosch_train_date_features.csv',
+            'bosch_train_numerical_features.csv',
+            'bosch_train_station_features.csv',
+            'bosch_train_sequence_features.csv']
 
 folder_name = 'xgb_model_features'
 model_folder = join('./', folder_name)
@@ -53,7 +54,7 @@ params = {}
 params["eta"]                      = 0.0075
 params["subsample"]                = 0.8
 params["colsample_bytree"]         = 0.8
-params["num_round"]                = 3001
+params["num_round"]                = 1001
 params["max_depth"]                = 5
 params["gamma"]                    = 0
 params["metrics"]                  = 'auc'
