@@ -56,13 +56,14 @@ csv_files = ['bosch_train_categorical_features.csv', 'bosch_train_date_features.
              'bosch_train_sequence_features.csv']
 
 #combined_feature_importance = get_combinedFeaImp_fromProj(feature_data_path)
-combined_feature_importance = get_combinedFeaImp_fromProj(feature_data_path, only_common_fea=True)
+#combined_feature_importance = get_combinedFeaImp_fromProj(feature_data_path, only_common_fea=True)
+combined_feature_importance = get_combinedFeaImp_fromProj(feature_data_path, only_common_fea=True, thres_name='norm_fscore_sum', thres=0.005)
 selected_features = combined_feature_importance.index.tolist()
 selected_features.append(dep_var_name)
 selected_features.append(idx_col_name)
 
 train, test = combine_data_byColumns(data_path, csv_files, selected_features, idx_col_name, dep_var_name) 
 start_time = time.time()
-train.to_csv(join(data_path, 'bosch_combined_train_data_update_common_fea.csv'))
-test.to_csv(join(data_path, 'bosch_combined_test_data_update_common_fea.csv'))
+train.to_csv(join(data_path, 'bosch_combined_train_data_update_common_fea_thres_005.csv'))
+test.to_csv(join(data_path, 'bosch_combined_test_data_update_common_fea_thres_005.csv'))
 print 'finish writing data to csv using {} minutes'.format(round((time.time()-start_time)/60, 2))
