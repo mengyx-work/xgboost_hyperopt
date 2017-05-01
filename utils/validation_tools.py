@@ -289,20 +289,25 @@ def score_MCC(ground_truth, scores):
 
 
 
-def create_validation_index(df, valid_frac = 0.2, dep_var_name = 'dep_var', to_shuffle=False):
+def create_validation_index(df, dep_var_name, valid_frac=0.2, to_shuffle=False, group_by_dep_var=False):
     '''
     function to create train/validation DataFrame index
     from a given DataFrame.
     '''
     valid_index = []
     train_index = []
-    index_series = df[dep_var_name]
-    grouped_index = index_series.groupby(index_series)
 
-    for name, group in grouped_index:
-        index_length = int(valid_frac * group.shape[0])
-        valid_index.extend(group[0:index_length].index.tolist())
-        train_index.extend(group[index_length:].index.tolist())
+    if group_by_dep_var:
+        index_series = df[dep_var_name]
+        grouped_index = index_series.groupby(index_series)
+
+        for name, group in grouped_index:
+            index_length = int(valid_frac * group.shape[0])
+            valid_index.extend(group[0:index_length].index.tolist())
+            train_index.extend(group[index_length:].index.tolist())
+
+    train_index = df.index.to_series().sample(int(df.shape[0] * 1. * frac), replace=False)
+    valid_index = set(df.index.to_series()) - set(train_index)
 
     ## shuffle the training and test data in place
     if to_shuffle:
