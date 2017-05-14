@@ -306,8 +306,8 @@ def create_validation_index(df, dep_var_name, valid_frac=0.2, to_shuffle=False, 
             valid_index.extend(group[0:index_length].index.tolist())
             train_index.extend(group[index_length:].index.tolist())
 
-    train_index = df.index.to_series().sample(int(df.shape[0] * 1. * frac), replace=False)
-    valid_index = set(df.index.to_series()) - set(train_index)
+    train_index = df.index.to_series().sample(int(df.shape[0] * 1. * valid_frac), replace=False)
+    valid_index = list(set(df.index.to_series()) - set(train_index))
 
     ## shuffle the training and test data in place
     if to_shuffle:
